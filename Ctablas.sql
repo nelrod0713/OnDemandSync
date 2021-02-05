@@ -21,9 +21,9 @@ COMMENT ON TABLE :sch.usuarios
 
 -- Table: Origen.usu_audit
 
- DROP TABLE if exists :sch.usu_audit;
+ DROP TABLE if exists :sch.usuarios_log;
 
-CREATE TABLE :sch.usu_audit
+CREATE TABLE :sch.usuarios_log
 (
     operation char(1) NOT NULL,
     stamp timestamp NOT NULL,
@@ -39,8 +39,34 @@ CREATE TABLE :sch.usu_audit
 )
 TABLESPACE pg_default;
 
-ALTER TABLE :sch.usu_audit
+ALTER TABLE :sch.usuarios_log
     OWNER to postgres;
 
-COMMENT ON TABLE :sch.usu_audit
+COMMENT ON TABLE :sch.usuarios_log
     IS 'Tabla de auditoria de usuarios';
+
+-- Table: facturacion
+DROP TABLE IF EXISTS :sch.facturacion;
+CREATE TABLE :sch.facturacion
+(
+    id_company integer NOT NULL,
+    date date NOT NULL,
+    concept integer NOT NULL,
+    invoice_value money,
+    synced timestamp,
+    CONSTRAINT fact_pkey PRIMARY KEY (id_company, date, concept)	
+);
+DROP TABLE IF EXISTS :sch.facturacion_log;
+CREATE TABLE :sch.facturacion_log
+(
+    operation char(1) NOT NULL,
+    stamp timestamp NOT NULL,
+    user_aud text NOT NULL,
+    sync timestamp NULL,
+    id_company integer NOT NULL,
+    date date NOT NULL,
+    concept integer NOT NULL,
+    invoice_value money,
+    synced timestamp,
+    CONSTRAINT logfact_pkey PRIMARY KEY (operation, stamp, concept)	
+);
