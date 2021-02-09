@@ -70,3 +70,16 @@ CREATE TABLE :sch.facturacion_log
     synced timestamp,
     CONSTRAINT logfact_pkey PRIMARY KEY (operation, stamp, concept)	
 );
+
+--Tabla para guardar el log de sincronizaciones
+DROP TABLE IF EXISTS :sch.Sync_Procs_Log;
+CREATE TABLE :sch.Sync_Procs_Log
+(
+    Schema_table character varying(60) NOT NULL,
+    Table_name character varying(60) NOT NULL,
+    Sync_Type char(1) NOT NULL CHECK (Sync_Type IN ('F','O','D')), --F Full O Origen D Destino
+    stamp timestamp NOT NULL,
+    user_proc text NOT NULL,
+    CONSTRAINT SyncProc_pkey PRIMARY KEY (Schema_table, Table_name, Sync_Type, stamp)
+    --CONSTRAINT type_check );	
+);
