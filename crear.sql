@@ -13,6 +13,7 @@
 CREATE EXTENSION dblink;
 
 --VIsta para ver la informacion de las compañias
+\i cvista.sql
 
 --Crear las tablas
 \i ctablas.sql
