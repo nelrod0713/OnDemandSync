@@ -15,8 +15,14 @@ CREATE EXTENSION dblink;
 --VIsta para ver la informacion de las compañias
 \i cvista.sql
 
+-- Crear sequences 
+\i Cseqs.sql
 --Crear las tablas
 \i ctablas.sql
+
+\i Icias.sql
+-- Crear sequences 
+\i Cseqs.sql
 
 --Crear la funcion de sincronizacion
 \i Fu_AuditLog.sql

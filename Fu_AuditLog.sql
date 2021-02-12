@@ -30,8 +30,10 @@ BEGIN
             RETURN OLD;
         ELSIF (TG_OP = 'UPDATE') THEN
             Lr_RecordU = NEW;
-            select  Fu_ComandoUpdate(Lv_Schema, Lv_Tabla,'U', Lr_RecordU,OLD)
-              into Lv_comando;
+            If Lr_RecordU.updated_function IS NULL OR Lr_RecordU.updated_function <> 'F_OriSync' THEN
+              select  Fu_ComandoUpdate(Lv_Schema, Lv_Tabla,'U', Lr_RecordU,OLD)
+                into Lv_comando;
+            END IF;  
             --INSERT INTO ori.usu_audit SELECT 'U', now(), user, null, NEW.*;
             RETURN NEW;
         ELSIF (TG_OP = 'INSERT') THEN
@@ -53,9 +55,14 @@ DECLARE
   Lv_Texto  VARCHAR;
   lv_comando VARCHAR;
   ri RECORD;
-
+  Lv_CurrentDB VARCHAR;
+  Ln_Seq BIGINT;
 BEGIN
-  Lv_comando = 'insert into '||Pv_Schema||'.'||Pv_TableName||'_log (operation,stamp,user_aud,sync';
+  select current_database()
+    into Lv_CurrentDB;
+  --EXECUTE 'SELECT seq_'||usuarios||'_log into Ln_Seq';
+  Lv_comando = 'insert into '||Pv_Schema||'.'||Pv_TableName||'_log (operation,stamp,user_aud,sync,db_instance';
+  --Lv_comando = 'insert into '||Pv_Schema||'.'||Pv_TableName||'_log (operation,stamp,user_aud,sync,db_instance, secuencia';
   FOR ri IN
       SELECT ordinal_position, column_name
       FROM information_schema.columns
@@ -66,7 +73,8 @@ BEGIN
   LOOP
     Lv_comando = Lv_comando||','||ri.column_name;
   END LOOP;
-  Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null';
+  Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||chr(39)||Lv_CurrentDB||chr(39);
+  --Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||chr(39)||Lv_CurrentDB||chr(39)||','||Ln_Seq;
   FOR ri IN
       SELECT ordinal_position, column_name, data_type
       FROM information_schema.columns
@@ -100,10 +108,13 @@ DECLARE
   Lv_TextoNew  VARCHAR;
   Lv_TextoNewI  VARCHAR;
   Lv_TextoOld  VARCHAR;
+  Lv_synced VARCHAR;
   lv_comando VARCHAR;
+  Lv_CurrentDB VARCHAR;
   ri RECORD;
   Lr_Col RECORD;
   Ln_Prim integer;
+  Ln_Seq BIGINT;
 
 BEGIN
   --Valores a actualizar
@@ -115,13 +126,22 @@ BEGIN
       AND table_name = Pv_TableName
       ORDER BY ordinal_position
   LOOP
+    --EXECUTE 'SELECT seq_'||usuarios||'_log into Ln_Seq';
     --RAISE NOTICE E'\n ================> Col : % ',Lr_Col.column_name;
     EXECUTE 'SELECT ($1).' || Lr_Col.column_name || '::text' INTO Lv_TextoNew USING Pr_RegNew;
     EXECUTE 'SELECT ($1).' || Lr_Col.column_name || '::text' INTO Lv_TextoOld USING Pr_RegOld;
     Lv_TextoNewI = Lv_TextoNew;
+    IF Lr_Col.column_name = 'synced' THEN
+      Lv_synced = quote_nullable(Lv_TextoNewI); 
+    ELSE  
+      Lv_synced = quote_nullable(null);
+    END IF;
+    Lv_synced = quote_nullable(Pr_RegNew.synced);
     Lv_comando := null;
     IF quote_nullable(Lv_TextoNew) <> quote_nullable(Lv_TextoOld) THEN
-      Lv_comando = 'insert into '||Pv_Schema||'.'||Pv_TableName||'_log_col (operation,stamp,user_aud,sync ';
+      select current_database()
+      into Lv_CurrentDB;
+      Lv_comando = 'insert into '||Pv_Schema||'.'||Pv_TableName||'_log_col (operation,stamp,user_aud,sync, db_instance ';
 
       --Columnas de la llave primaria
       FOR ri IN
@@ -138,7 +158,8 @@ BEGIN
         LOOP
           Lv_comando = Lv_comando||','||ri.column_name;
         END LOOP;
-        Lv_comando = Lv_comando||',campo, valor, synced) Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null';
+        Lv_comando = Lv_comando||',campo, valor, synced) Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||
+                     chr(39)||Lv_CurrentDB||chr(39);
         --RAISE NOTICE E'\n    1.comand : % ',Lv_comando;
         --Valores de la llave primaria
         FOR ri IN
@@ -173,7 +194,9 @@ BEGIN
         else  
           Lv_comando = Lv_comando||','||Lv_TextoNew;
         end if;  
-        Lv_comando = Lv_comando||',null ) ';
+        --Lv_comando = Lv_comando||',null ) ';
+        Lv_comando = Lv_comando||','||Lv_synced||' ) ';
+    --RAISE NOTICE E'\n ================> Lv_synced  : % ',Lv_synced;
         execute lv_comando;
     END IF; --Lv_TextoNew <> Lv_TextoOld 
   END LOOP;

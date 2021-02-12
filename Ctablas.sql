@@ -1,15 +1,28 @@
+    --Tabla con la informacion de las Compañias solo en BD_Central
+drop table IF EXISTS companys;
+    CREATE TABLE companys(
+    id_company integer NOT NULL,
+    Nombre             character varying(60) NOT NULL,
+    db_instance        character varying(30) NOT NULL,
+    db_central character varying(1) default 'N',
+    host       character varying,
+    schema_name  character varying,   
+    CONSTRAINT comp_pkey PRIMARY KEY (id_company)
+);
 -- Table: usuarios
  DROP TABLE if exists :sch.usuarios;
 
 CREATE TABLE :sch.usuarios
 (
+    id_company integer NOT NULL,
     id integer NOT NULL,
     nombre character varying(60)  NOT NULL,
     apellido character varying(60) NOT NULL,
     created timestamp,
     updated timestamp,
     synced timestamp,
-    CONSTRAINT usuarios_pk PRIMARY KEY (id)
+    updated_function character varying(60),
+    CONSTRAINT usuarios_pk PRIMARY KEY (id_company,id)
 )
 TABLESPACE pg_default;
 
@@ -29,13 +42,17 @@ CREATE TABLE :sch.usuarios_log
     stamp timestamp NOT NULL,
     user_aud text NOT NULL,
     sync timestamp NULL,
+    db_instance        character varying(30) NOT NULL,
+    secuencia serial NOT NULL,
+    id_company integer NOT NULL,
     id integer NOT NULL,
     nombre character varying(60) NOT NULL,
     apellido character varying(60) NOT NULL,
     created timestamp,
     updated timestamp,
     synced timestamp,
-    CONSTRAINT usuaud_pk PRIMARY KEY (operation,id,stamp)
+    updated_function character varying(60),
+    CONSTRAINT usuaud_pk PRIMARY KEY (id_company,id,stamp,secuencia)
 )
 TABLESPACE pg_default;
 
@@ -54,11 +71,14 @@ CREATE TABLE :sch.usuarios_log_col
     stamp timestamp NOT NULL,
     user_aud text NOT NULL,
     sync timestamp NULL,
+    db_instance        character varying(30) NOT NULL,
+    secuencia SERIAL NOT NULL,
+    id_company integer NOT NULL,
     id integer NOT NULL,
     campo VARCHAR NOT NULL,
     valor VARCHAR NOT NULL,
     synced timestamp,
-    CONSTRAINT usulogcol_pk PRIMARY KEY (operation,id,stamp,campo)
+    CONSTRAINT usulogcol_pk PRIMARY KEY (id_company,id,stamp,secuencia)
 )
 TABLESPACE pg_default;
 
@@ -86,6 +106,7 @@ CREATE TABLE :sch.facturacion_log
     stamp timestamp NOT NULL,
     user_aud text NOT NULL,
     sync timestamp NULL,
+    db_instance        character varying(30) NOT NULL,
     id_company integer NOT NULL,
     date date NOT NULL,
     concept integer NOT NULL,
