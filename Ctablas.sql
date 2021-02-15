@@ -76,7 +76,7 @@ CREATE TABLE :sch.usuarios_log_col
     id_company integer NOT NULL,
     id integer NOT NULL,
     campo VARCHAR NOT NULL,
-    valor VARCHAR NOT NULL,
+    valor VARCHAR NULL,
     synced timestamp,
     CONSTRAINT usulogcol_pk PRIMARY KEY (id_company,id,stamp,secuencia)
 )
