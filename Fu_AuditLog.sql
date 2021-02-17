@@ -42,10 +42,12 @@ BEGIN
             RETURN NEW;
         ELSIF (TG_OP = 'INSERT') THEN
             Lr_RecordI = NEW;
-            select  Fu_ComandoInsert(Lv_Schema, Lv_Tabla,'I', Lr_RecordI)
-              into Lv_comando;
-             --RAISE NOTICE E'\n    comand : % ',Lv_comando;
-             execute Lv_comando;
+            If Lr_RecordI.updated_function IS NULL OR Lr_RecordI.updated_function <> 'F_OriSync' THEN
+              select  Fu_ComandoInsert(Lv_Schema, Lv_Tabla,'I', Lr_RecordI)
+                into Lv_comando;
+              --RAISE NOTICE E'\n    comand : % ',Lv_comando;
+              execute Lv_comando;
+             end if;
             --INSERT INTO ori.usu_audit SELECT 'I', now(), user, null, NEW.*;
             RETURN NEW;
         END IF;

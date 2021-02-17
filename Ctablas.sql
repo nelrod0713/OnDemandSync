@@ -97,6 +97,7 @@ CREATE TABLE :sch.facturacion
     concept integer NOT NULL,
     invoice_value money,
     synced timestamp,
+    updated_function character varying(60),
     CONSTRAINT fact_pkey PRIMARY KEY (id_company, date, concept)	
 );
 DROP TABLE IF EXISTS :sch.facturacion_log;
@@ -107,14 +108,42 @@ CREATE TABLE :sch.facturacion_log
     user_aud text NOT NULL,
     sync timestamp NULL,
     db_instance        character varying(30) NOT NULL,
+    secuencia serial NOT NULL,
     id_company integer NOT NULL,
     date date NOT NULL,
     concept integer NOT NULL,
     invoice_value money,
     synced timestamp,
-    CONSTRAINT logfact_pkey PRIMARY KEY (operation, stamp, concept)	
+    updated_function character varying(60),
+    CONSTRAINT logfact_pkey PRIMARY KEY (id_company, date, concept, secuencia)	
 );
 
+-- Table: sch.facturacion_log_col Auditoria por columna
+DROP TABLE if exists :sch.facturacion_log_col;
+
+CREATE TABLE :sch.facturacion_log_col
+(
+    operation char(1) NOT NULL,
+    stamp timestamp NOT NULL,
+    user_aud text NOT NULL,
+    sync timestamp NULL,
+    db_instance        character varying(30) NOT NULL,
+    secuencia SERIAL NOT NULL,
+    id_company integer NOT NULL,
+    date date NOT NULL,
+    concept integer NOT NULL,
+    campo VARCHAR NOT NULL,
+    valor VARCHAR NULL,
+    synced timestamp,
+    CONSTRAINT faclogcol_pk PRIMARY KEY (id_company,date, concept, stamp,secuencia)
+)
+TABLESPACE pg_default;
+
+ALTER TABLE :sch.facturacion_log_col
+    OWNER to postgres;
+
+COMMENT ON TABLE :sch.facturacion_log_col
+    IS 'Tabla de auditoria de usuarios por columna';    
 --Tabla para guardar el log de sincronizaciones
 DROP TABLE IF EXISTS :sch.Sync_Procs_Log;
 CREATE TABLE :sch.Sync_Procs_Log

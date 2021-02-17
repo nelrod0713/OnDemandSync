@@ -22,7 +22,7 @@ CREATE EXTENSION dblink;
 
 \i Icias.sql
 -- Crear sequences 
-\i Cseqs.sql
+--\i Cseqs.sql
 
 --Crear la funcion de sincronizacion
 \i Fu_AuditLog.sql
