@@ -2,7 +2,7 @@
 create or replace procedure F_ProcsLog(
   Pv_Schema VARCHAR,
   Pv_TableName VARCHAR,
-  Pv_Operation VARCHAR
+  Pv_Operation char(1)
 )
 language plpgsql    
 AS $BODY$

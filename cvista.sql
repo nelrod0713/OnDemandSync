@@ -2,8 +2,9 @@
 CREATE or replace VIEW ori.v_usuarios AS
 SELECT *
     FROM dblink('dbname=bd_des host= 192.168.1.102 user=postgres password=postnrt1964', -- options=-csearch_path=',
-                'select id_company, id , nombre, apellido, created, updated, synced from des.usuarios')
-      AS t1(id_company integer, id integer, nombre character varying(60),  apellido character varying(60), created timestamp, updated timestamp, synced timestamp);
+                'select id_company, id , nombre, apellido, created, updated, synced, updated_function from des.usuarios')
+      AS t1(id_company integer, id integer, nombre character varying(60),  apellido character varying(60), created timestamp, updated timestamp, 
+      synced timestamp, updated_function character varying(60));
 
 --VIsta en origen para ver la informacion del log de la BD bd_des
 CREATE or replace VIEW ori.v_usuarios_log AS

@@ -30,11 +30,12 @@ BEGIN
             RETURN OLD;
         ELSIF (TG_OP = 'UPDATE') THEN
               Lr_RecordU = NEW;
-            if OLD.updated_function= 'F_OriSync' THEN
+             RAISE NOTICE E'\n    Old : %  New % \n',OLD.updated_function, Lr_RecordU.updated_function;
+            if coalesce(OLD.updated_function,'*') = 'F_OriSync' THEN
               Lr_RecordU.updated_function= NULL;
             end IF;
-             --RAISE NOTICE E'\n    Old : %  New % \n',OLD.updated_function, Lr_RecordU.updated_function;
-            If Lr_RecordU.updated_function IS NULL OR Lr_RecordU.updated_function <> 'F_OriSync' THEN
+             RAISE NOTICE E'\n    Old : %  New % \n',OLD.updated_function, Lr_RecordU.updated_function;
+            If Lr_RecordU.updated_function IS NULL OR coalesce(Lr_RecordU.updated_function,'*') <> 'F_OriSync' THEN
               select  Fu_ComandoUpdate(Lv_Schema, Lv_Tabla,'U', Lr_RecordU,OLD)
                 into Lv_comando;
             END IF;  
