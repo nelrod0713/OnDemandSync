@@ -307,41 +307,46 @@ Lv_CurrentDB VARCHAR;
 --Lr_Tabla RECORD;
 --Lv_SchemaLocal VARCHAR = 'ori';
  begin 
-          --Actualizar la fecha de sincronizacion del log 
-            Lv_comando = 'select dblink_exec(''dbname='||Pv_Instance||
-              ' host='||Pv_host||' user=postgres password=postnrt1964'',
-		         ''UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||' SET synced= now() ';
-              FOR Lr_Cols IN
-                  SELECT k.ordinal_position, k.column_name, c.data_type
-                  FROM information_schema.key_column_usage k,
-                      information_schema.columns c
-                  WHERE	k.constraint_catalog = c.table_catalog
-                    and k.constraint_schema = c.table_schema
-                    and k.table_name = c.table_name
-                    and k.column_name = c.column_name
-                    and k.constraint_schema = Pv_SchemaLoc
-                    AND k.table_name = Pv_TableName
-                  ORDER BY ordinal_position
-              LOOP
-                EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
-                if Lr_Cols.ordinal_position = 1 then
-                  if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
-                    Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
-                  else
-                    Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||Lv_Texto;
-                  end if;
-                else
-                  if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
-                    Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
-                  else
-                    Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
-                  end if;
-                end if;  
-              END LOOP;
+  --Actualizar la fecha de sincronizacion del log 
+  Lv_comando = 'select dblink_exec(''dbname='||Pv_Instance||
+    ' host='||Pv_host||' user=postgres password=postnrt1964'',
+    ''UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||' SET synced= now() ';
+    FOR Lr_Cols IN
+        SELECT k.ordinal_position, k.column_name, c.data_type
+        FROM information_schema.key_column_usage k,
+            information_schema.columns c
+        WHERE	k.constraint_catalog = c.table_catalog
+          and k.constraint_schema = c.table_schema
+          and k.table_name = c.table_name
+          and k.column_name = c.column_name
+          and k.constraint_schema = Pv_SchemaLoc
+          AND k.table_name = Pv_TableName
+        ORDER BY ordinal_position
+    LOOP
+      EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+      if Lr_Cols.ordinal_position = 1 then
+        if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+          Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
+        else
+          Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||Lv_Texto;
+        end if;
+      else
+        if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+          Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
+        else
+          Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
+        end if;
+      end if;  
+    END LOOP;
 
-              Lv_comando = Lv_comando||chr(39)||')';
-            --raise notice E' comando update ====> %\n', lv_comando;    
-            RETURN Lv_comando ;
+    Lv_comando = Lv_comando||chr(39)||')';
+  --raise notice E' comando update ====> %\n', lv_comando;    
+  RETURN Lv_comando ;
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_RemAudUpdComand %s \n',sqlerrm;       
+    rollback;
+    return null;
 end;
 $$ LANGUAGE plpgsql VOLATILE;
 --Procedimiento para sincromizar BD Origen con los registros nuevos de la BD Destino
@@ -430,7 +435,7 @@ begin
       Pr_reg.updated_function= 'F_OriSync';
       Pr_reg.synced= now();
 
-      raise notice '%', Lr_users; 
+      --raise notice '%', Lr_users; 
       select db_instance
         into Lv_instance
         from companys --v_companys

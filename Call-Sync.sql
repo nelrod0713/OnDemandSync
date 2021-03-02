@@ -10,6 +10,8 @@ DECLARE
   Pv_TableName VARCHAR= 'usuarios';
   Pv_Operation VARCHAR='F';
   Pr_Reg ori.v_facturacion_log%ROWTYPE;
+  v_sql varchar;
+  v_int int;
 
 begin
 IF Pv_Operation = 'D' THEN
@@ -22,6 +24,7 @@ IF Pv_Operation = 'D' THEN
     Pv_TableName 
   );
   Raise notice E'Paso Sync Des \n';
+
 ELSIF Pv_Operation = 'O' THEN
   -- sincronizar reg en  Origen
   call Fu_OriReg(

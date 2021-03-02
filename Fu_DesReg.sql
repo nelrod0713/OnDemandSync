@@ -21,9 +21,16 @@ Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lr_Record RECORD; 
+Lv_sql varchar;
+
 --Lv_instance VARCHAR;
 --Lv_CurrentDB VARCHAR;
-begin 
+begin
+  --conexion a la BD remota para manejo de rollback
+  perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
+  password=postnrt1964 host='||Pv_Host);
+  Lv_sql := 'begin;';
+  perform dblink_exec('pg', Lv_sql, false);
   --Registros de auditoria en la BD Origen, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori orig ';
@@ -33,6 +40,7 @@ begin
   fetch next from Lc_recs into Lr_Recs;
   while found 
   loop
+
     raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
@@ -123,33 +131,51 @@ begin
     fetch next from Lc_Recs into Lr_Recs; 
   end loop;
   close Lc_Recs;
+  Lv_sql := 'commit;';
+  perform dblink_exec('pg', Lv_sql, false);
+  perform dblink_disconnect('pg');
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error %s \n',sqlerrm;       
+    Lv_sql := 'rollback;';
+    perform dblink_exec('pg', Lv_sql, false);
+    perform dblink_disconnect('pg');
+    rollback;
+  
 END $BODY$;
 
-create or replace procedure  Fu_Getrecord(
+create or replace function  Fu_Getrecord(
   Pv_SchemaLoc VARCHAR,
   Pv_TableName character varying,
-  Pn_Secuencia BIGINT,
-  Pr_Record record
+  Pn_Secuencia BIGINT
 ) 
-language plpgsql    
-AS $BODY$
+returns RECORD AS $$
+--language plpgsql    
+--AS $BODY$
 DECLARE
 Lv_Cursor VARCHAR;
 Lr_Users ori.usuarios_log%ROWTYPE;
 Lr_fact ori.facturacion_log%ROWTYPE;
+Lr_Record RECORD;
 BEGIN
       Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Pn_Secuencia;
+      Lv_Cursor = Lv_Cursor||' union select orig.*'||
+                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
+                  'where orig.secuencia =  '||Pn_Secuencia;
+        raise notice E' comando  ====> %\n', Lv_cursor;
       IF Pv_TableName = 'usuarios' THEN            
         EXECUTE Lv_Cursor into Lr_Users;
         raise notice E' get record   ====> %\n', Lr_Users.secuencia;
-        Pr_Record = Lr_users;    
-        --RETURN Lr_Users ;
+        Lr_Record = Lr_users;    
+        RETURN Lr_Users ;
       ELSIF Pv_TableName = 'facturacion' THEN            
         EXECUTE Lv_Cursor into Lr_Fact;
-        Pr_Record = Lr_fact;    
-        --RETURN Lr_Fact ;
+        Lr_Record = Lr_fact;    
+        RETURN Lr_Fact ;
       END IF;    
-        raise notice E' get record fin  ====> %\n', Pr_Record.secuencia;    
-END $BODY$;
+        raise notice E' get record fin  ====> %\n', Lr_Record.secuencia;
+        --RETURN Lr_Record;    
+END; --$BODY$;
+$$ LANGUAGE plpgsql VOLATILE;

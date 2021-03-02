@@ -266,7 +266,7 @@ begin
     Lr_users.updated_function= 'F_OriSync';
     Lr_users.synced= now();
 
-    raise notice '%', Lr_users; 
+    --raise notice '%', Lr_users; 
     select db_instance
       into Lv_instance
       from companys --v_companys

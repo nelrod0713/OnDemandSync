@@ -24,6 +24,12 @@ Lr_Record RECORD;
 --Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 begin 
+  --conexion a la BD remota para manejo de rollback
+  perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
+  password=postnrt1964 host='||Pv_Host);
+  Lv_sql := 'begin;';
+  perform dblink_exec('pg', Lv_sql, false);
+
   select current_database()
     into Lv_CurrentDB;
 
@@ -207,4 +213,14 @@ begin
     fetch next from Lc_Recs into Lr_Recs; 
   end loop;
   close Lc_Recs;
+  Lv_sql := 'commit;';
+  perform dblink_exec('pg', Lv_sql, false);
+  perform dblink_disconnect('pg');
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_OriReg %s \n',sqlerrm;       
+    Lv_sql := 'rollback;';
+    perform dblink_exec('pg', Lv_sql, false);
+    perform dblink_disconnect('pg');
+    rollback;
 END $BODY$;
