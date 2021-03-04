@@ -8,7 +8,7 @@ DECLARE
   Pv_Schema VARCHAR = 'ori';
   --Pv_TableName VARCHAR= 'facturacion';
   Pv_TableName VARCHAR= 'usuarios';
-  Pv_Operation VARCHAR='F';
+  Pv_Operation VARCHAR='D';
   Pr_Reg ori.v_facturacion_log%ROWTYPE;
   v_sql varchar;
   v_int int;
@@ -34,7 +34,7 @@ ELSIF Pv_Operation = 'O' THEN
     Pv_SchemaRem, 
     Pv_TableName 
   );
-  Raise notice E'Paso Sync Des \n';
+  Raise notice E'Paso Sync Ori \n';
 ELSIF Pv_Operation = 'F' THEN
   -- sincronizar reg en ambas BDs
   call Fu_FullReg(

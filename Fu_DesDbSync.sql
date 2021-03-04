@@ -23,6 +23,7 @@ Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
+Lv_column VARCHAR;
 --Lr_Tabla RECORD;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
@@ -58,7 +59,10 @@ begin
           ORDER BY ordinal_position
           LOOP
          --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
-            EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+          --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+          Lv_column = Lr_Cols.column_name;
+          select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+            into Lv_Texto;       
          --raise notice E'  texto ====> %\n', Lv_Texto;    
             if Lr_Cols.ordinal_position = 1 then
               if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
@@ -145,7 +149,7 @@ begin
   END LOOP;
   Lv_Cursor = Lv_Cursor||') and orig.operation = '||chr(39)||'D'||chr(39)||'and (orig.synced is null ) '||
                            ' and orig.secuencia = '||Pr_reg.secuencia;  
-      --raise notice E' cursor  delete ====> %\n', lv_cursor;    
+      raise notice E' cursor  delete ====> %\n', lv_cursor;    
 
   open Lc_users for execute Lv_Cursor; 
   fetch next from Lc_users into Lr_users;
@@ -279,12 +283,10 @@ begin
     select   Fu_TableInsComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName , Pr_Reg) --Lr_users)
       into Lv_comando; 
 
-    --raise notice E' comando INSERT ====> %\n', lv_comando;    
     EXECUTE Lv_comando ;
     --Actualizar la fecha de sincronizacion del log Origen
     select   Fu_LocAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log' , Pr_Reg) --Lr_Users )
     into Lv_comando; 
-    --raise notice E' comando update ====> %\n', lv_comando;    
     EXECUTE Lv_comando ;
 
     fetch next from Lc_Users into Lr_users; 
@@ -314,6 +316,7 @@ Lr_Cols RECORD;
 --Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
+Lv_column VARCHAR;
 --Lv_instance VARCHAR;
 --Lv_CurrentDB VARCHAR;
 --Lv_Texto TEXT;
@@ -350,7 +353,15 @@ begin
         AND k.table_name = Pv_TableName
       ORDER BY ordinal_position
   LOOP
-    EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    IF Pc_OperType = 'U' THEN
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
+    ELSIF Pc_OperType = 'D' THEN
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
+    END IF;
     if Lv_texto is Null then
       Lv_texto = 'null';
     end if;
@@ -372,7 +383,7 @@ begin
 
   Lv_comando = Lv_comando||chr(39)||')';
 -------------------------------------------------------------------------
-  --raise notice E' comando update ====> %\n', lv_comando;    
+  raise notice E' comando Oper % ====> %\n', Pc_OperType, lv_comando;    
   RETURN Lv_comando ;
 end;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -390,6 +401,7 @@ DECLARE
 Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
+Lv_column VARCHAR;
 begin 
   DISCARD PLANS;
   Lv_comando = 'select dblink_exec('||chr(39)||'dbname='||Pv_Instance||
@@ -422,7 +434,10 @@ begin
       AND table_name = Pv_TableName
       ORDER BY ordinal_position
   LOOP
-    EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
     if Lv_texto is Null then
       Lv_texto = 'null';
       Lr_Cols.data_type = 'int';
@@ -462,6 +477,7 @@ DECLARE
 Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
+Lv_column VARCHAR;
  begin 
 --Actualizar la fecha de sincronizacion del log 
   Lv_comando = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||' SET synced= now() ';
@@ -477,7 +493,10 @@ Lv_Texto  VARCHAR;
         AND k.table_name = Pv_TableName
       ORDER BY ordinal_position
   LOOP
-    EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
         Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);

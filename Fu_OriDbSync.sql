@@ -23,6 +23,7 @@ Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
+Lv_column VARCHAR;
 --Lr_Tabla RECORD;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
@@ -58,7 +59,11 @@ begin
         AND k.table_name = Pv_TableName
       ORDER BY ordinal_position
   LOOP
-    EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
+
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date') Then
         Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
@@ -93,7 +98,10 @@ begin
       ORDER BY ordinal_position
     LOOP
     --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
-      EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
     --raise notice E'  texto ====> %\n', Lv_Texto;    
       if Lr_Cols.ordinal_position = 1 then
         if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
@@ -186,6 +194,7 @@ Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
+Lv_column VARCHAR;
 --Lr_Tabla RECORD;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
@@ -251,7 +260,10 @@ begin
             AND k.table_name = Pv_TableName
           ORDER BY ordinal_position
       LOOP
-        EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_reg;
+        --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_reg;
+        Lv_column = Lr_Cols.column_name;
+        select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+          into Lv_Texto;       
         --select   Fu_Comando(Pv_SchemaLoc ,Pv_TableName ,Lr_Cols.column_name, Lr_Users ) into Lv_texto;
  
         if Lr_Cols.ordinal_position = 1 then
@@ -303,6 +315,7 @@ Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
+Lv_column VARCHAR;
 --Lv_Texto TEXT;
 --Lr_Tabla RECORD;
 --Lv_SchemaLocal VARCHAR = 'ori';
@@ -323,7 +336,11 @@ Lv_CurrentDB VARCHAR;
           AND k.table_name = Pv_TableName
         ORDER BY ordinal_position
     LOOP
-      EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+      --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+      Lv_column = Lr_Cols.column_name;
+      select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
+
       if Lr_Cols.ordinal_position = 1 then
         if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
           Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
@@ -370,6 +387,8 @@ Lr_Cols RECORD;
 --Lr_userDes ori.usuarios_log_col%ROWTYPE;
 --Lr_userDes RECORD;
 Lv_comando VARCHAR;
+--Lv_comand VARCHAR;
+Lv_column VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
@@ -471,7 +490,11 @@ begin
           AND table_name = Pv_TableName
           ORDER BY ordinal_position
       LOOP
-        EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+        --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;  ojo
+        Lv_column = Lr_Cols.column_name;
+        select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+          into Lv_Texto;       
+        --raise notice E' col % valor ====> %\n', Lr_Cols.column_name,Lv_Texto ;    
         if Lv_Texto is null then
           Lv_Texto = 'null';
           Lr_Cols.data_type = 'int';
@@ -512,5 +535,36 @@ begin
       RETURN;
   END;   
 end $BODY$;
+--Funcion para Actualizar la fecha de sincronizacion del log
+create or replace FUNCTION Fu_GetValColumn(
+  Pv_Instance varchar,
+  Pv_Host VARCHAR,
+  Pv_SchemaLoc VARCHAR,
+  Pv_SchemaRem VARCHAR, 
+  Pv_TableName VARCHAR,
+  Pv_ColumnName VARCHAR,
+  Pn_Sec integer
+) RETURNS VARCHAR AS $$
+DECLARE
+  Lr_rec RECORD;
+  Lv_comand VARCHAR;
+  Lv_Comando varchar;
+  BEGIN
+
+    Lv_Comando = 'select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.'||Pv_TableName||' where secuencia = '||Pn_Sec;
+    Lv_Comando = Lv_Comando||' union select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.v_'||Pv_TableName||' where secuencia = '||Pn_Sec;
+    For Lr_rec in execute Lv_comando 
+    LOOP
+      return Lr_rec.valor;
+    END LOOP;    
+
+  RETURN null ;
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_GetValColumn %s \n',sqlerrm;       
+    rollback;
+    return null;
+end;
+$$ LANGUAGE plpgsql VOLATILE;
 
 
