@@ -53,6 +53,9 @@ begin
         Pv_TableName,
         Lr_Audit
       );
+      Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                  'where secuencia =  '||Lr_Recs.Secuencia;
+      execute Lv_Cursor;          
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
       Lv_Cursor = 'select orig.*'||
@@ -67,6 +70,9 @@ begin
         Pv_TableName,
         Lr_Audit
       );
+      Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                  'where secuencia =  '||Lr_Recs.Secuencia;
+      execute Lv_Cursor;          
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
       IF Lr_Recs.db_instance = 'bd_ori' THEN

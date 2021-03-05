@@ -13,14 +13,16 @@ Lv_cursor varchar;
 Lc_Recs refcursor;
 --Lc_RegAud refcursor;
 Lr_Recs RECORD; --record;  ojo
-Lr_Users ori.usuarios_log%ROWTYPE; --record;  ojo
-Lr_UsersCol ori.usuarios_log_col%ROWTYPE; --record;  ojo
-Lr_Fact ori.facturacion_log%ROWTYPE; --record;  ojo
-Lr_FactCol ori.facturacion_log_col%ROWTYPE; --record;  ojo
+Lr_Audit RECORD; --ori.usuarios_log%ROWTYPE; --record;  ojo
+--Lr_Users ori.usuarios_log%ROWTYPE; --record;  ojo
+--Lr_UsersCol ori.usuarios_log_col%ROWTYPE; --record;  ojo
+--Lr_Fact ori.facturacion_log%ROWTYPE; --record;  ojo
+--Lr_FactCol ori.facturacion_log_col%ROWTYPE; --record;  ojo
 Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lr_Record RECORD; 
+Lv_sql VARCHAR;
 --Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 begin 
@@ -53,50 +55,32 @@ begin
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_Users;          
-          call Fu_DesSyncNew(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Users
-          );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_Fact;          
-          call Fu_DesSyncNew(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Fact
-          );
-        END IF;           
+        execute Lv_Cursor into Lr_Audit;          
+        call Fu_DesSyncNew(
+          Pv_Instance,
+          Pv_Host,
+          Pv_SchemaLoc,
+          Pv_SchemaRem, 
+          Pv_TableName,
+          Lr_Audit
+        );
+        Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+        execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_Users;          
-          call Fu_OriSyncNew(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Users
-          );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_Fact;          
-          call Fu_OriSyncNew(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Fact
-          );
-        END IF;           
+        execute Lv_Cursor into Lr_Audit;          
+        call Fu_OriSyncNew(
+          Pv_Instance,
+          Pv_Host,
+          Pv_SchemaLoc,
+          Pv_SchemaRem, 
+          Pv_TableName,
+          Lr_Audit
+        );
+        Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+        perform dblink_exec('pg', Lv_sql, false);
       END IF;           
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
@@ -108,50 +92,32 @@ begin
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_Users;          
-          call Fu_DesSyncDel(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Users
-          );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_Fact;          
-          call Fu_DesSyncDel(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Fact
-          );
-        END IF;           
+        execute Lv_Cursor into Lr_Audit;          
+        call Fu_DesSyncDel(
+          Pv_Instance,
+          Pv_Host,
+          Pv_SchemaLoc,
+          Pv_SchemaRem, 
+          Pv_TableName,
+          Lr_Audit
+        );
+        Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+        execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_Users;          
-          call Fu_OriSyncDel(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Users
-          );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_Fact;          
-          call Fu_OriSyncDel(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_Fact
-          );
-        END IF;           
+        execute Lv_Cursor into Lr_Audit;          
+        call Fu_OriSyncDel(
+          Pv_Instance,
+          Pv_Host,
+          Pv_SchemaLoc,
+          Pv_SchemaRem, 
+          Pv_TableName,
+          Lr_Audit
+        );
+        Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+        perform dblink_exec('pg', Lv_sql, false);
       END IF;  
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
@@ -163,50 +129,26 @@ begin
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_UsersCol;          
+          execute Lv_Cursor into Lr_Audit;          
           call Fu_DesSyncUpd(
             Pv_Instance,
             Pv_Host,
             Pv_SchemaLoc,
             Pv_SchemaRem, 
             Pv_TableName,
-            Lr_UsersCol
+            Lr_Audit
           );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_FactCol;          
-          call Fu_DesSyncUpd(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_FactCol
-          );
-        END IF;           
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        IF Pv_TableName = 'usuarios' THEN          
-          execute Lv_Cursor into Lr_UsersCol;          
+          execute Lv_Cursor into Lr_Audit;          
           call Fu_OriSyncUpd(
             Pv_Instance,
             Pv_Host,
             Pv_SchemaLoc,
             Pv_SchemaRem, 
             Pv_TableName,
-            Lr_UsersCol
+            Lr_Audit
           );
-        ELSIF Pv_TableName = 'facturacion' THEN          
-          execute Lv_Cursor into Lr_FactCol;          
-          call Fu_OriSyncUpd(
-            Pv_Instance,
-            Pv_Host,
-            Pv_SchemaLoc,
-            Pv_SchemaRem, 
-            Pv_TableName,
-            Lr_FactCol
-          );
-        END IF;           
       END IF;  
     END IF;
 
