@@ -29,7 +29,7 @@ Lv_column VARCHAR;
 --Lv_SchemaLocal VARCHAR = 'ori';
 begin 
 
-  raise notice 'reg.fecha %', Lr_users; 
+  --raise notice 'reg.fecha %', Lr_users; 
   select db_instance
     into Lv_instance
     from companys --v_companys
@@ -236,7 +236,7 @@ begin
     Pr_reg.updated_function= 'F_OriSync';
     Pr_reg.synced= now();
 
-    raise notice '%', Lr_users; 
+    --raise notice '%', Lr_users; 
     select db_instance
       into Lv_instance
       from companys --v_companys

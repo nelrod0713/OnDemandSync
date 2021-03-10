@@ -84,11 +84,11 @@ begin
         --raise notice E' comando update log col ====> %\n', lv_comando;    
         EXECUTE Lv_comando ;
 
-      ELSE
+/*      ELSE
         --Aactualizar la auditoria de la BD Remota
         select   Fu_RemAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log_col' , Pr_Reg )
           into Lv_comando; 
-        EXECUTE Lv_comando ;
+        EXECUTE Lv_comando ;*/
       END IF;
 
 end $BODY$;
@@ -149,7 +149,7 @@ begin
   END LOOP;
   Lv_Cursor = Lv_Cursor||') and orig.operation = '||chr(39)||'D'||chr(39)||'and (orig.synced is null ) '||
                            ' and orig.secuencia = '||Pr_reg.secuencia;  
-      raise notice E' cursor  delete ====> %\n', lv_cursor;    
+      --raise notice E' cursor  delete ====> %\n', lv_cursor;    
 
   open Lc_users for execute Lv_Cursor; 
   fetch next from Lc_users into Lr_users;
@@ -158,7 +158,7 @@ begin
     Pr_Reg.updated_function= 'F_OriSync';
     Pr_Reg.synced= now();
 
-    raise notice '%', Lr_users; 
+    --raise notice '%', Lr_users; 
     select db_instance
       into Lv_instance
       from companys --v_companys
@@ -267,8 +267,8 @@ begin
   fetch next from Lc_users into Lr_users;
   while found 
   loop
-    Lr_users.updated_function= 'F_OriSync';
-    Lr_users.synced= now();
+    Pr_reg.updated_function= 'F_OriSync';
+    Pr_reg.synced= now();
 
     --raise notice '%', Lr_users; 
     select db_instance
@@ -383,7 +383,7 @@ begin
 
   Lv_comando = Lv_comando||chr(39)||')';
 -------------------------------------------------------------------------
-  raise notice E' comando Oper % ====> %\n', Pc_OperType, lv_comando;    
+  --raise notice E' comando Oper % ====> %\n', Pc_OperType, lv_comando;    
   RETURN Lv_comando ;
 end;
 $$ LANGUAGE plpgsql VOLATILE;
