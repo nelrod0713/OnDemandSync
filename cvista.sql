@@ -65,7 +65,7 @@ SELECT *
       id_company integer, date date, concept integer, campo character varying(60),  valor character varying(60), synced timestamp);
 --VIsta de registros a sincronizar en Destino
 CREATE or replace VIEW ori.v_usuarios_aud_ori AS
---Registros de Insert/ Delete de Origen
+--Registros de Insert de Origen
 select operation,
     stamp,
     user_aud,
@@ -74,8 +74,38 @@ select operation,
     secuencia,
     id_company,
     id
- from ori.usuarios_log 
+ from ori.usuarios_log orig
 where synced is null 
+  and operation = 'I'
+  --Que no exista en el destino
+  and not exists (select 'x'
+                    from ori.v_usuarios
+                  where id_company = orig.id_company
+                    and id = orig.id)
+  --que no se haya borrado en el destino                  
+  and not exists (select 'x'
+                    from ori.v_usuarios_log
+                  where id_company = orig.id_company
+                    and id = orig.id
+                    and operation = 'D' and synced is null )
+--Registros de Delete de Origen
+union
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company,
+    id
+ from ori.usuarios_log orig
+where synced is null 
+  and operation = 'D'
+  --que exista en el destino
+  and exists (select 'x'
+                    from ori.v_usuarios
+                  where id_company = orig.id_company
+                    and id = orig.id)
 union 
 --Registros de Update de Origen
 select operation,
@@ -113,8 +143,39 @@ select operation,
     secuencia,
     id_company,
     id
- from ori.v_usuarios_log 
+ from ori.v_usuarios_log des
 where synced is null 
+  and operation = 'I'
+  --Que no exista en el origen
+  and not exists (select 'x'
+                    from ori.usuarios
+                  where id_company = des.id_company
+                    and id = des.id)
+  --que no se haya borrado en el origen                  
+  and not exists (select 'x'
+                    from ori.usuarios_log
+                  where id_company = des.id_company
+                    and id = des.id
+                    and operation = 'D' and synced is null )
+
+--Registros de Delete de Destino
+union
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company,
+    id
+ from ori.v_usuarios_log des
+where synced is null 
+  and operation = 'D'
+  --que exista en el origen
+  and exists (select 'x'
+                    from ori.usuarios
+                  where id_company = des.id_company
+                    and id = des.id)
 union 
 --Registros de Update de Origen
 select operation,
@@ -152,8 +213,7 @@ select operation,
     secuencia,
     id_company,
     id
- from ori.v_usuarios_log 
-where synced is null 
+ from ori.v_usuarios_aud_ori 
 union 
 --Registros de Insert/ Delete de Origen
 select operation,
@@ -164,64 +224,7 @@ select operation,
     secuencia,
     id_company,
     id
- from ori.usuarios_log 
-where synced is null 
-union 
---Registros de Update de Origen
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id 
-from ori.usuarios_log_col 
-where synced is null 
-union 
---Registros de Update de Destino
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id 
-from ori.v_usuarios_log_col --_aud_des 
-where synced is null 
-order by stamp;
---VIsta de Facturacion en origen registros a sincronizar en Destino
-CREATE or replace VIEW ori.v_facturacion_aud_ori AS
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
- from ori.facturacion_log 
-where synced is null 
-union 
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
-from ori.facturacion_log_col 
-where synced is null 
-union 
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
-from ori.v_facturacion_log_col --_aud_des 
-where synced is null 
+ from ori.v_usuarios_aud_des 
 order by stamp;
 
 --VIsta con registros a sincronizar en Origen

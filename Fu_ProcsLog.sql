@@ -13,7 +13,7 @@ begin
   begin
     Lv_comando = 'INSERT INTO '||Pv_Schema||'.Sync_procs_log (schema_table, table_name, sync_type, stamp, user_proc)';
     Lv_comando = Lv_comando||' VALUES ('||chr(39)||Pv_Schema||chr(39)||','||chr(39)||Pv_TableName||chr(39)||','||chr(39)||Pv_Operation||chr(39)||','||chr(39)||NOW()||chr(39)||','||chr(39)|| user||chr(39)||')';
-      RAISE NOTICE 'COMANDO % ',lv_comando;
+      --RAISE NOTICE 'COMANDO % ',lv_comando;
 	EXECUTE Lv_Comando;  
 
   EXCEPTION

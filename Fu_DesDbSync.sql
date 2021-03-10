@@ -28,68 +28,60 @@ Lv_column VARCHAR;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
 begin 
-    select db_instance
-      into Lv_instance
-      from companys --v_companys
-    where id_company = Lr_users.id_company;
+  select db_instance
+    into Lv_instance
+    from companys --v_companys
+  where id_company = Lr_users.id_company;
 
-    select current_database()
-      into Lv_CurrentDB;
+  select current_database()
+    into Lv_CurrentDB;
 
-      select   Fu_TableUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName , Pr_Reg,'U' )
-        into Lv_comando; 
+  select   Fu_TableUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName , Pr_Reg,'U' )
+    into Lv_comando; 
 
-      --raise notice E' comando update ====> %\n', lv_comando;    
-      EXECUTE Lv_comando ;
-      --Valida si se actualiza la BD Local o la Remota
-      IF Pr_Reg.db_instance = Lv_CurrentDB THEN
-          --Actualizar la fecha de sincronizacion del log local
-        Lv_comando =  'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col  SET synced= now() ';
-        --armar el where               
-        FOR Lr_Cols IN
-          SELECT k.ordinal_position, k.column_name, c.data_type
-          FROM information_schema.key_column_usage k,
-              information_schema.columns c
-          WHERE	k.constraint_catalog = c.table_catalog
-            and k.constraint_schema = c.table_schema
-            and k.table_name = c.table_name
-            and k.column_name = c.column_name
-            and k.constraint_schema = Pv_SchemaLoc
-            AND k.table_name = Pv_TableName||'_log_col' 
-          ORDER BY ordinal_position
-          LOOP
-         --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
-          --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
-          Lv_column = Lr_Cols.column_name;
-          select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
-            into Lv_Texto;       
-         --raise notice E'  texto ====> %\n', Lv_Texto;    
-            if Lr_Cols.ordinal_position = 1 then
-              if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
-                Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
-              else
-                Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||Lv_Texto;
-              end if;
-            else
-              if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
-                Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
-              else
-                Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
-              end if;
-            end if;  
-          END LOOP;
+  --raise notice E' comando update ====> %\n', lv_comando;    
+  EXECUTE Lv_comando ;
+  --Valida si se actualiza la BD Local o la Remota
+  IF Pr_Reg.db_instance = Lv_CurrentDB THEN
+      --Actualizar la fecha de sincronizacion del log local
+    Lv_comando =  'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col  SET synced= now() ';
+    --armar el where               
+    FOR Lr_Cols IN
+      SELECT k.ordinal_position, k.column_name, c.data_type
+      FROM information_schema.key_column_usage k,
+          information_schema.columns c
+      WHERE	k.constraint_catalog = c.table_catalog
+        and k.constraint_schema = c.table_schema
+        and k.table_name = c.table_name
+        and k.column_name = c.column_name
+        and k.constraint_schema = Pv_SchemaLoc
+        AND k.table_name = Pv_TableName||'_log_col' 
+      ORDER BY ordinal_position
+      LOOP
+      --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
+      --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+      Lv_column = Lr_Cols.column_name;
+      select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+        into Lv_Texto;       
+      --raise notice E'  texto ====> %\n', Lv_Texto;    
+        if Lr_Cols.ordinal_position = 1 then
+          if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+            Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
+          else
+            Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||Lv_Texto;
+          end if;
+        else
+          if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+            Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
+          else
+            Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
+          end if;
+        end if;  
+      END LOOP;
 
-        --select   Fu_Comando('L',Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName , Lr_UserDes )
-        --into Lv_comando; 
-        --raise notice E' comando update log col ====> %\n', lv_comando;    
-        EXECUTE Lv_comando ;
+    EXECUTE Lv_comando ;
 
-/*      ELSE
-        --Aactualizar la auditoria de la BD Remota
-        select   Fu_RemAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log_col' , Pr_Reg )
-          into Lv_comando; 
-        EXECUTE Lv_comando ;*/
-      END IF;
+  END IF;
 
 end $BODY$;
 
@@ -106,9 +98,9 @@ language plpgsql
 AS $BODY$
 declare 
 Lv_cursor varchar;
-Lc_Users refcursor;
-Lc_RegAud refcursor;
-Lr_users record; --ori.usuarios_log%ROWTYPE; --record;  ojo
+--Lc_Users refcursor;
+--Lc_RegAud refcursor;
+--Lr_users record; --ori.usuarios_log%ROWTYPE; --record;  ojo
 --Lr_users ori.facturacion_log%ROWTYPE; --record;
 Lr_Cols RECORD;
 --Lr_userDes ori.usuarios_log_col%ROWTYPE;
@@ -124,37 +116,6 @@ Lv_CurrentDB VARCHAR;
 --Lr_fact ori.facturacion_log%ROWTYPE;  --ojo
 begin 
   --Registros elimiandos de la BD Origen
-  Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where exists (select 1 from '||Pv_SchemaLoc||'.v_'||Pv_TableName||' des';
-  --armar el where               
-  FOR Lr_Cols IN
-      SELECT k.ordinal_position, k.column_name, c.data_type
-      FROM information_schema.key_column_usage k,
-          information_schema.columns c
-      WHERE	k.constraint_catalog = c.table_catalog
-        and k.constraint_schema = c.table_schema
-        and k.table_name = c.table_name
-        and k.column_name = c.column_name
-        and k.constraint_schema = Pv_SchemaLoc
-        AND k.table_name = Pv_TableName
-      ORDER BY ordinal_position
-  LOOP
-    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Lr_userDes;
-    if Lr_Cols.ordinal_position = 1 then
-        Lv_Cursor = Lv_Cursor||' where orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name ;
-    else
-        Lv_Cursor = Lv_Cursor||' and  orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name;
-    end if;  
-  END LOOP;
-  Lv_Cursor = Lv_Cursor||') and orig.operation = '||chr(39)||'D'||chr(39)||'and (orig.synced is null ) '||
-                           ' and orig.secuencia = '||Pr_reg.secuencia;  
-      --raise notice E' cursor  delete ====> %\n', lv_cursor;    
-
-  open Lc_users for execute Lv_Cursor; 
-  fetch next from Lc_users into Lr_users;
-  while found 
-  loop
     Pr_Reg.updated_function= 'F_OriSync';
     Pr_Reg.synced= now();
 
@@ -162,7 +123,7 @@ begin
     select db_instance
       into Lv_instance
       from companys --v_companys
-    where id_company = Lr_users.id_company;
+    where id_company = Pr_Reg.id_company;
 
     select current_database()
       into Lv_CurrentDB;
@@ -179,9 +140,6 @@ begin
     --raise notice E' comando update ====> %\n', lv_comando;    
     EXECUTE Lv_comando ;
 
-    fetch next from Lc_Users into Lr_users; 
-  end loop;
-  close Lc_Users;
 END $BODY$;   
 
 --Procedimiento para sincromizar BD Destino con los registros nuevos de la BD Origen
@@ -197,10 +155,10 @@ language plpgsql
 AS $BODY$
 declare 
 Lv_cursor varchar;
-Lc_Users refcursor;
-Lc_RegAud refcursor;
+--Lc_Users refcursor;
+--Lc_RegAud refcursor;
 --Lr_users ori.facturacion_log%ROWTYPE; --record;
-Lr_users RECORD; --ori.usuarios_log%ROWTYPE; --record;
+--Lr_users RECORD; --ori.usuarios_log%ROWTYPE; --record;
 Lr_Cols RECORD;
 --Lr_userDes ori.usuarios_log_col%ROWTYPE;
 --Lr_userDes RECORD;
@@ -212,61 +170,6 @@ Lv_CurrentDB VARCHAR;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
 begin 
-  --Registros elimiandos de la BD Origen
-  Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where not exists (select 1 from '||Pv_SchemaLoc||'.v_'||Pv_TableName||' des';
-  --armar el where               
-  FOR Lr_Cols IN
-      SELECT k.ordinal_position, k.column_name, c.data_type
-      FROM information_schema.key_column_usage k,
-          information_schema.columns c
-      WHERE	k.constraint_catalog = c.table_catalog
-        and k.constraint_schema = c.table_schema
-        and k.table_name = c.table_name
-        and k.column_name = c.column_name
-        and k.constraint_schema = Pv_SchemaLoc
-        AND k.table_name = Pv_TableName
-      ORDER BY ordinal_position
-  LOOP
-    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Lr_userDes;
-    if Lr_Cols.ordinal_position = 1 then
-        Lv_Cursor = Lv_Cursor||' where orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name ;
-    else
-        Lv_Cursor = Lv_Cursor||' and  orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name;
-    end if;  
-  END LOOP;
-  Lv_Cursor = Lv_Cursor||')';
-  Lv_Cursor = Lv_Cursor||' and not exists (select 1 from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log des';
-  --armar el where               
-  FOR Lr_Cols IN
-      SELECT k.ordinal_position, k.column_name, c.data_type
-      FROM information_schema.key_column_usage k,
-          information_schema.columns c
-      WHERE	k.constraint_catalog = c.table_catalog
-        and k.constraint_schema = c.table_schema
-        and k.table_name = c.table_name
-        and k.column_name = c.column_name
-        and k.constraint_schema = Pv_SchemaLoc
-        AND k.table_name = Pv_TableName
-      ORDER BY ordinal_position
-  LOOP
-    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Lr_userDes;
-    if Lr_Cols.ordinal_position = 1 then
-        Lv_Cursor = Lv_Cursor||' where orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name ;
-    else
-        Lv_Cursor = Lv_Cursor||' and  orig.'||Lr_Cols.column_name ||'= des.'||Lr_Cols.column_name;
-    end if;  
-  END LOOP;
-  Lv_Cursor = Lv_Cursor||' and des.operation = '||chr(39)||'D'||chr(39)||'and (des.synced is null ))'||
-                         ' and orig.operation = '||chr(39)||'I'||chr(39)||'and (orig.synced is null )'||
-                         ' and orig.secuencia = '||Pr_reg.secuencia; 
-      --raise notice E' cursor  ====> %\n', lv_cursor;    
-
-  open Lc_users for execute Lv_Cursor; 
-  fetch next from Lc_users into Lr_users;
-  while found 
-  loop
     Pr_reg.updated_function= 'F_OriSync';
     Pr_reg.synced= now();
 
@@ -274,7 +177,7 @@ begin
     select db_instance
       into Lv_instance
       from companys --v_companys
-    where id_company = Lr_users.id_company;
+    where id_company = Pr_Reg.id_company;
 
     select current_database()
       into Lv_CurrentDB;
@@ -289,9 +192,6 @@ begin
     into Lv_comando; 
     EXECUTE Lv_comando ;
 
-    fetch next from Lc_Users into Lr_users; 
-  end loop;
-  close Lc_Users; 
 end $BODY$;
 
 
