@@ -226,6 +226,88 @@ select operation,
     id
  from ori.v_usuarios_aud_des 
 order by stamp;
+--VIsta con registros a sincronizar en Origen
+CREATE or replace VIEW ori.v_facturacion_aud_des AS
+--Registros de Insert/ Delete de Destino
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+ from ori.v_facturacion_log 
+where synced is null 
+union 
+--Registros de Update de Origen
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+from ori.facturacion_log_col 
+where synced is null 
+union 
+--Registros de Update de Destino
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+from ori.v_facturacion_log_col --_aud_des 
+where synced is null 
+order by stamp;
+--VIsta con registros para sincronizar Origen y Destino
+CREATE or replace VIEW ori.v_facturacion_aud_full AS
+--Registros de Insert/ Delete de Destino
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+ from ori.v_facturacion_log 
+where synced is null 
+union 
+--Registros de Insert/ Delete de Origen
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+ from ori.facturacion_log 
+where synced is null 
+union 
+--Registros de Update de Origen
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+from ori.facturacion_log_col 
+where synced is null 
+union 
+--Registros de Update de Destino
+select operation,
+    stamp,
+    user_aud,
+    sync,
+    db_instance,
+    secuencia,
+    id_company
+from ori.v_facturacion_log_col --_aud_des 
+where synced is null 
+order by stamp;
+
 
 --VIsta con registros a sincronizar en Origen
 CREATE or replace VIEW ori.v_facturacion_aud_des AS

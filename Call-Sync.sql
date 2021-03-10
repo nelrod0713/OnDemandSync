@@ -14,7 +14,7 @@ DECLARE
   v_int int;
 
 begin
-IF Pv_Operation = 'D' THEN
+I Pv_Operation = 'D' THEN
   -- sincronizar reg en Destino
   call Fu_DesReg(
     Pv_Instance,
