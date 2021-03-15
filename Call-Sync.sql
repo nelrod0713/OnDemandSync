@@ -1,7 +1,7 @@
 DO $$
 DECLARE
   Pv_Instance varchar = 'bd_des';
-  Pv_Host VARCHAR = '192.168.1.108';
+  Pv_Host VARCHAR = 'localhost'; --'192.168.1.108';
   Pv_SchemaLoc VARCHAR = 'ori';
   Pv_SchemaRem varchar = 'des'; 
   Pr_Old ori.usuarios%ROWTYPE;
@@ -14,7 +14,7 @@ DECLARE
   v_int int;
 
 begin
-I Pv_Operation = 'D' THEN
+IF Pv_Operation = 'D' THEN
   -- sincronizar reg en Destino
   call Fu_DesReg(
     Pv_Instance,

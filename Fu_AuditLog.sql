@@ -64,6 +64,7 @@ DECLARE
   ri RECORD;
   Lv_CurrentDB VARCHAR;
   Ln_Seq BIGINT;
+  Ld_Now timestamp;
 BEGIN
   select current_database()
     into Lv_CurrentDB;
@@ -80,7 +81,8 @@ BEGIN
   LOOP
     Lv_comando = Lv_comando||','||ri.column_name;
   END LOOP;
-  Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||chr(39)||Lv_CurrentDB||chr(39);
+  select clock_timestamp() into Ld_Now;   
+  Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||','||chr(39)||Ld_Now||chr(39)||', user, null,'||chr(39)||Lv_CurrentDB||chr(39);
   --Lv_comando = Lv_comando||') Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||chr(39)||Lv_CurrentDB||chr(39)||','||Ln_Seq;
   FOR ri IN
       SELECT ordinal_position, column_name, data_type
@@ -122,6 +124,7 @@ DECLARE
   Lr_Col RECORD;
   Ln_Prim integer;
   Ln_Seq BIGINT;
+  Ld_Now timestamp;
 
 BEGIN
   --Valores a actualizar
@@ -165,7 +168,8 @@ BEGIN
         LOOP
           Lv_comando = Lv_comando||','||ri.column_name;
         END LOOP;
-        Lv_comando = Lv_comando||',campo, valor, synced) Values ('||chr(39)||Pv_Oper||chr(39)||', now(), user, null,'||
+        select clock_timestamp() into Ld_Now;   
+        Lv_comando = Lv_comando||',campo, valor, synced) Values ('||chr(39)||Pv_Oper||chr(39)||', '||chr(39)||Ld_Now||chr(39)||', user, null,'||
                      chr(39)||Lv_CurrentDB||chr(39);
         --RAISE NOTICE E'\n    1.comand : % ',Lv_comando;
         --Valores de la llave primaria
