@@ -108,7 +108,6 @@ begin
       end if;  
     END LOOP;
     EXECUTE Lv_comando ;
-
   ELSE
     --Aactualizar la auditoria de la BD Remota
     select   Fu_RemAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log_col' , Pr_Reg )
@@ -386,6 +385,11 @@ begin
       Lv_Texto = 'null';
       Lr_Cols.data_type = 'int';
     end if;   
+    if Lv_column = 'synced' then
+      select now() into Lv_Texto;
+      Lr_Cols.data_type = 'date';
+      --raise notice E' Id % %\n',Pr_reg.id, Lv_texto;
+    end if;
 
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character','money') Then

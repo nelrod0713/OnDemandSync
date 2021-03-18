@@ -47,36 +47,36 @@ begin
     --raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       Lv_Cursor = Lv_Cursor||' UNION select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
+                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        execute Lv_Cursor into Lr_Audit;          
+        --execute Lv_Cursor into Lr_Audit;          
         call Fu_DesSyncNew(
           Pv_Instance,
           Pv_Host,
           Pv_SchemaLoc,
           Pv_SchemaRem, 
           Pv_TableName,
-          Lr_Audit
+          Lr_Recs --Lr_Audit
         );
         Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
                     'where secuencia =  '||Lr_Recs.Secuencia;
         execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        execute Lv_Cursor into Lr_Audit;          
+        --execute Lv_Cursor into Lr_Audit;          
         call Fu_OriSyncNew(
           Pv_Instance,
           Pv_Host,
           Pv_SchemaLoc,
           Pv_SchemaRem, 
           Pv_TableName,
-          Lr_Audit
+          Lr_Recs --Lr_Audit
         );
         Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
                     'where secuencia =  '||Lr_Recs.Secuencia;
@@ -84,36 +84,36 @@ begin
       END IF;           
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       Lv_Cursor = Lv_Cursor||' UNION select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
+                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        execute Lv_Cursor into Lr_Audit;          
+        --execute Lv_Cursor into Lr_Audit;          
         call Fu_DesSyncDel(
           Pv_Instance,
           Pv_Host,
           Pv_SchemaLoc,
           Pv_SchemaRem, 
           Pv_TableName,
-          Lr_Audit
+          Lr_Recs --Lr_Audit
         );
         Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
                     'where secuencia =  '||Lr_Recs.Secuencia;
         execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        execute Lv_Cursor into Lr_Audit;          
+        --execute Lv_Cursor into Lr_Audit;          
         call Fu_OriSyncDel(
           Pv_Instance,
           Pv_Host,
           Pv_SchemaLoc,
           Pv_SchemaRem, 
           Pv_TableName,
-          Lr_Audit
+          Lr_Recs --Lr_Audit
         );
         Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
                     'where secuencia =  '||Lr_Recs.Secuencia;
@@ -121,33 +121,33 @@ begin
       END IF;  
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
       Lv_Cursor = Lv_Cursor||' union select orig.*'||
                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
+                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-          execute Lv_Cursor into Lr_Audit;          
+          --execute Lv_Cursor into Lr_Audit;          
           call Fu_DesSyncUpd(
             Pv_Instance,
             Pv_Host,
             Pv_SchemaLoc,
             Pv_SchemaRem, 
             Pv_TableName,
-            Lr_Audit
+            Lr_Recs --Lr_Audit
           );
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-          execute Lv_Cursor into Lr_Audit;          
+          --execute Lv_Cursor into Lr_Audit;          
           call Fu_OriSyncUpd(
             Pv_Instance,
             Pv_Host,
             Pv_SchemaLoc,
             Pv_SchemaRem, 
             Pv_TableName,
-            Lr_Audit
+            Lr_Recs --Lr_Audit
           );
       END IF;  
     END IF;

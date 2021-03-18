@@ -25,6 +25,44 @@ begin
   password=postnrt1964 host='||Pv_Host);
   Lv_sql := 'begin;';
   perform dblink_exec('pg', Lv_sql, false);
+
+  --Actualizar registroa que no se deben procesar
+  BEGIN
+    Lv_Cursor = 'select orig.*'||
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des_no orig ';
+    raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
+
+    open Lc_Recs for execute Lv_Cursor; 
+    fetch next from Lc_recs into Lr_Recs;
+    while found 
+    loop
+        Lv_sql = 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+    --raise notice E' update  ====> %\n', lv_sql;    
+        perform dblink_exec('pg', Lv_sql, false);
+        --execute Lv_Cursor;          
+      fetch next from Lc_Recs into Lr_Recs; 
+    end loop;
+    close Lc_Recs;
+    Lv_sql := 'commit;';
+    perform dblink_exec('pg', Lv_sql, false);
+    perform dblink_disconnect('pg');
+    exception
+      WHEN OTHERS THEN
+        raise notice E' Error Actualizar registroS que no se deben procesar %s \n',sqlerrm;       
+        Lv_sql := 'rollback;';
+        perform dblink_exec('pg', Lv_sql, false);
+        perform dblink_disconnect('pg');
+        rollback;
+        RETURN;
+  END;    
+
+  --conexion a la BD remota para manejo de rollback
+  perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
+  password=postnrt1964 host='||Pv_Host);
+  Lv_sql := 'begin;';
+  perform dblink_exec('pg', Lv_sql, false);
+
   --Registros de auditoria en la BD Destino, pendientes de aplicar En Origen
   Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des orig ';
@@ -34,20 +72,20 @@ begin
   fetch next from Lc_recs into Lr_Recs;
   while found 
   loop
-    --raise notice 'Recs %', Lr_Recs; 
+    raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;          
+      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_OriSyncNew(
         Pv_Instance,
         Pv_Host,
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
       Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
                   'where secuencia =  '||Lr_Recs.Secuencia;
@@ -55,17 +93,17 @@ begin
 
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;          
+      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_OriSyncDel(
         Pv_Instance,
         Pv_Host,
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
       Lv_sql := 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
                   'where secuencia =  '||Lr_Recs.Secuencia;
@@ -88,7 +126,7 @@ begin
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
     END IF;
 

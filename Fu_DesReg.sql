@@ -28,6 +28,23 @@ begin
   password=postnrt1964 host='||Pv_Host);
   Lv_sql := 'begin;';
   perform dblink_exec('pg', Lv_sql, false);
+
+  --Actualizar registroa que no se deben procesar
+  Lv_Cursor = 'select orig.*'||
+                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori_no orig ';
+  raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
+
+  open Lc_Recs for execute Lv_Cursor; 
+  fetch next from Lc_recs into Lr_Recs;
+  while found 
+  loop
+      Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                  'where secuencia =  '||Lr_Recs.Secuencia;
+      execute Lv_Cursor;          
+    fetch next from Lc_Recs into Lr_Recs; 
+  end loop;
+  close Lc_Recs;
+
   --Registros de auditoria en la BD Origen, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori orig ';
@@ -41,41 +58,41 @@ begin
     --raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;          
+      execute Lv_Cursor into Lr_Audit; */         
       call Fu_DesSyncNew(
         Pv_Instance,
         Pv_Host,
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
       Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
                   'where secuencia =  '||Lr_Recs.Secuencia;
       execute Lv_Cursor;          
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      Lv_Cursor = 'select orig.*'||
+      /*Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
                   'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;          
+      execute Lv_Cursor into Lr_Audit; */         
       call Fu_DesSyncDel(
         Pv_Instance,
         Pv_Host,
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
       Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
                   'where secuencia =  '||Lr_Recs.Secuencia;
       execute Lv_Cursor;          
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
-      IF Lr_Recs.db_instance = 'bd_ori' THEN
+      /*IF Lr_Recs.db_instance = 'bd_ori' THEN
         Lv_Cursor = 'select orig.*'||
                   ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col orig '||
                     'where orig.secuencia =  '||Lr_Recs.Secuencia;
@@ -84,14 +101,14 @@ begin
                   ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col orig '||
                     'where orig.secuencia =  '||Lr_Recs.Secuencia;
       END IF;
-      execute Lv_Cursor into Lr_Audit;          
+      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_DesSyncUpd(
         Pv_Instance,
         Pv_Host,
         Pv_SchemaLoc,
         Pv_SchemaRem, 
         Pv_TableName,
-        Lr_Audit
+        Lr_Recs --Lr_Audit
       );
     END IF;
 

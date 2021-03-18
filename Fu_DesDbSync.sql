@@ -31,7 +31,7 @@ begin
   select db_instance
     into Lv_instance
     from companys --v_companys
-  where id_company = Lr_users.id_company;
+  where id_company = Pr_Reg.id_company;
 
   select current_database()
     into Lv_CurrentDB;
@@ -166,6 +166,7 @@ Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
+Ln_Cant integer;
 --Lr_Tabla RECORD;
 --Lv_text TEXT;
 --Lv_SchemaLocal VARCHAR = 'ori';
@@ -181,7 +182,13 @@ begin
 
     select current_database()
       into Lv_CurrentDB;
+    --validar si el registro existe
+    select Fu_TableRecCount(  Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName ,  Pr_Reg )
+      into Lv_comando; 
+    EXECUTE Lv_comando  into Ln_Cant;  
+    --raise notice ' Ln_Cant %', Ln_Cant; 
 
+if Ln_Cant = 0 then
     --Armar el comando para Insertar en la BD Destino los regIstros NUEVOS de la BD Origen
     select   Fu_TableInsComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName , Pr_Reg) --Lr_users)
       into Lv_comando; 
@@ -191,6 +198,7 @@ begin
     select   Fu_LocAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log' , Pr_Reg) --Lr_Users )
     into Lv_comando; 
     EXECUTE Lv_comando ;
+end if;    
 
 end $BODY$;
 
@@ -342,7 +350,11 @@ begin
       Lv_texto = 'null';
       Lr_Cols.data_type = 'int';
     end if;
-
+    if Lv_column = 'synced' then
+      select now() into Lv_Texto;
+      Lr_Cols.data_type = 'date';
+      --raise notice E' texto % % %\n',Lr_Cols.ordinal_position, Lr_Cols.data_type, Lv_texto;
+    end if;
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character','money') Then
         Lv_comando = Lv_comando||' '||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
@@ -416,3 +428,69 @@ Lv_column VARCHAR;
   RETURN Lv_comando ;
 end;
 $$ LANGUAGE plpgsql VOLATILE;
+
+--Funcion para validar si el registro exiate
+create or replace FUNCTION Fu_TableRecCount(
+  Pv_Instance varchar,
+  Pv_Host VARCHAR,
+  Pv_SchemaLoc VARCHAR,
+  Pv_SchemaRem character varying, 
+  Pv_TableName character varying,
+  Pr_Reg RECORD
+) RETURNS VARCHAR AS $$
+DECLARE
+Lr_Cols RECORD;
+Lv_comando VARCHAR;
+Lv_Texto  VARCHAR;
+Lv_column VARCHAR;
+begin 
+  DISCARD PLANS;
+
+  --Lv_comando = 'select count(*) from dblink('||chr(39)||'dbname='||Lv_instance||
+  --            ' host='||Lv_host||' user=postgres password=postnrt1964'||chr(39)||','||chr(39)||'select ';
+
+
+  Lv_comando = 'select count(*) FROM '||Pv_SchemaLoc||'.v_'||Pv_TableName;
+  --raise notice E' 1 comando update ====> %\n', lv_comando;    
+  --armar el where               
+  FOR Lr_Cols IN
+      SELECT k.ordinal_position, k.column_name, c.data_type
+      FROM information_schema.key_column_usage k,
+          information_schema.columns c
+      WHERE	k.constraint_catalog = c.table_catalog
+        and k.constraint_schema = c.table_schema
+        and k.table_name = c.table_name
+        and k.column_name = c.column_name
+        and k.constraint_schema = Pv_SchemaLoc
+        AND k.table_name = Pv_TableName
+      ORDER BY ordinal_position
+  LOOP
+    --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
+    Lv_column = Lr_Cols.column_name;
+    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+      into Lv_Texto;       
+    if Lv_texto is Null then
+      Lv_texto = 'null';
+    end if;
+--raise notice E' where ====> % % \n', Lr_Cols.column_name,Lv_Texto;    
+    if Lr_Cols.ordinal_position = 1 then
+      if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+        Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
+      else
+        Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||Lv_Texto;
+      end if;
+    else
+      if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
+        Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||chr(39)||chr(39)||Lv_Texto||chr(39)||chr(39);
+      else
+        Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
+      end if;
+    end if;  
+  END LOOP;
+
+-------------------------------------------------------------------------
+  --raise notice E' comando count  ====> %\n', lv_comando;    
+  RETURN Lv_comando ;
+end;
+$$ LANGUAGE plpgsql VOLATILE;
+

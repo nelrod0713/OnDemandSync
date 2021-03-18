@@ -43,7 +43,8 @@ BEGIN
             RETURN NEW;
         ELSIF (TG_OP = 'INSERT') THEN
             Lr_RecordI = NEW;
-            If Lr_RecordI.updated_function IS NULL OR Lr_RecordI.updated_function <> 'F_OriSync' THEN
+              --RAISE NOTICE E'\n    comand : % % ',Lr_RecordI.id,Lr_RecordI.synced;
+            If (Lr_RecordI.updated_function IS NULL OR Lr_RecordI.updated_function <> 'F_OriSync') and Lr_RecordI.synced is null THEN
               select  Fu_ComandoInsert(Lv_Schema, Lv_Tabla,'I', Lr_RecordI)
                 into Lv_comando;
               --RAISE NOTICE E'\n    comand : % ',Lv_comando;
