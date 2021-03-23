@@ -107,7 +107,7 @@ begin
         end if;
       end if;  
     END LOOP;
-    EXECUTE Lv_comando ;
+    --ojo nrt EXECUTE Lv_comando ;
   ELSE
     --Aactualizar la auditoria de la BD Remota
     select   Fu_RemAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log_col' , Pr_Reg )

@@ -11,13 +11,8 @@ AS $BODY$
 declare 
 Lv_cursor varchar;
 Lc_Recs refcursor;
---Lc_RegAud refcursor;
 Lr_Recs RECORD; --record;  ojo
 Lr_Audit RECORD; --ori.usuarios_log%ROWTYPE; --record;  ojo
---Lr_Users ori.usuarios_log%ROWTYPE; --record;  ojo
---Lr_UsersCol ori.usuarios_log_col%ROWTYPE; --record;  ojo
---Lr_Fact ori.facturacion_log%ROWTYPE; --record;  ojo
---Lr_FactCol ori.facturacion_log_col%ROWTYPE; --record;  ojo
 Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
@@ -26,14 +21,56 @@ Lv_sql VARCHAR;
 --Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 begin 
+  select current_database()
+  into Lv_CurrentDB;
   --conexion a la BD remota para manejo de rollback
   perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
   password=postnrt1964 host='||Pv_Host);
   Lv_sql := 'begin;';
   perform dblink_exec('pg', Lv_sql, false);
 
-  select current_database()
-    into Lv_CurrentDB;
+    --Actualizar registroa que no se deben procesar
+  BEGIN
+    Lv_Cursor = 'select orig.*'||
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full_no orig ';
+    raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
+
+    open Lc_Recs for execute Lv_Cursor; 
+    fetch next from Lc_recs into Lr_Recs;
+    while found 
+    loop
+      IF Lr_Recs.db_instance <>  Lv_CurrentDB THEN
+        Lv_sql = 'UPDATE '||Pv_SchemaRem||'.'||Pv_TableName||'_log  set synced = now() '||
+              'where secuencia =  '||Lr_Recs.Secuencia;
+    --raise notice E' update  ====> % %\n',Lr_Recs.db_instance, lv_sql;    
+        perform dblink_exec('pg', Lv_sql, false);
+      ELSE
+        Lv_sql = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+              'where secuencia =  '||Lr_Recs.Secuencia;
+    --raise notice E' update  ====> % %\n',Lr_Recs.db_instance, lv_sql;    
+        EXECUTE Lv_sql;
+      END IF;  
+      fetch next from Lc_Recs into Lr_Recs; 
+    end loop;
+    close Lc_Recs;
+    Lv_sql := 'commit;';
+    perform dblink_exec('pg', Lv_sql, false);
+    perform dblink_disconnect('pg');
+    exception
+      WHEN OTHERS THEN
+        raise notice E' Error Actualizar registroS que no se deben procesar %s \n',sqlerrm;       
+        Lv_sql := 'rollback;';
+        perform dblink_exec('pg', Lv_sql, false);
+        perform dblink_disconnect('pg');
+        rollback;
+        RETURN;
+  END;    
+--return;
+  --conexion a la BD remota para manejo de rollback
+  perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
+  password=postnrt1964 host='||Pv_Host);
+  Lv_sql := 'begin;';
+  perform dblink_exec('pg', Lv_sql, false);
 
   --Registros de auditoria de las BDs, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
@@ -47,15 +84,8 @@ begin
     --raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      Lv_Cursor = Lv_Cursor||' UNION select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        --execute Lv_Cursor into Lr_Audit;          
         call Fu_DesSyncNew(
           Pv_Instance,
           Pv_Host,
@@ -69,7 +99,6 @@ begin
         execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        --execute Lv_Cursor into Lr_Audit;          
         call Fu_OriSyncNew(
           Pv_Instance,
           Pv_Host,
@@ -84,15 +113,8 @@ begin
       END IF;           
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      Lv_Cursor = Lv_Cursor||' UNION select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-        --execute Lv_Cursor into Lr_Audit;          
         call Fu_DesSyncDel(
           Pv_Instance,
           Pv_Host,
@@ -106,7 +128,6 @@ begin
         execute Lv_Cursor;          
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-        --execute Lv_Cursor into Lr_Audit;          
         call Fu_OriSyncDel(
           Pv_Instance,
           Pv_Host,
@@ -121,15 +142,8 @@ begin
       END IF;  
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      Lv_Cursor = Lv_Cursor||' union select orig.*'||
-                ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;*/
       IF Lr_Recs.db_instance =  Lv_CurrentDB THEN
         --Sincrinizar destino
-          --execute Lv_Cursor into Lr_Audit;          
           call Fu_DesSyncUpd(
             Pv_Instance,
             Pv_Host,
@@ -140,7 +154,6 @@ begin
           );
       ELSE -- Lr_Recs.db_instance <>  Lv_CurrentDB THEN
         --Sincrinizar Origen
-          --execute Lv_Cursor into Lr_Audit;          
           call Fu_OriSyncUpd(
             Pv_Instance,
             Pv_Host,

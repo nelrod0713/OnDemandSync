@@ -72,7 +72,7 @@ begin
   fetch next from Lc_recs into Lr_Recs;
   while found 
   loop
-    raise notice 'Recs %', Lr_Recs; 
+    --raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
       /*Lv_Cursor = 'select orig.*'||

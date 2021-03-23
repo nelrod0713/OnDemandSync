@@ -95,7 +95,13 @@ where synced is null
                     from ori.v_usuarios_log
                   where id_company = orig.id_company
                     and id = orig.id
-                    and operation = 'D' and synced is null ));
+                    and operation = 'D' and synced is null )
+  --que se hayan borrado en el origen                  
+        or  exists (select 'x'
+                    from ori.usuarios_log
+                  where id_company = orig.id_company
+                    and id = orig.id
+                    and operation = 'D' and synced is not null ));
 
 --VIsta de registros a sincronizar en Destino
 CREATE or replace VIEW ori.v_usuarios_aud_ori AS
@@ -300,8 +306,28 @@ from ori.v_usuarios_log_col --_aud_des
 where synced is null 
 order by stamp;
 
+--VIsta con registros que no se deben sincronizar Origen y Destino
+CREATE or replace VIEW ori.v_usuarios_aud_full_no AS
+--Registros de Insert/ Delete de Destino
+select * from ori.v_usuarios_aud_des_no
+union
+select * from ori.v_usuarios_aud_ori_no;
+
 --VIsta con registros para sincronizar Origen y Destino
 CREATE or replace VIEW ori.v_usuarios_aud_full AS
+--Registros de Insert/ Delete de Destino
+select * from ori.v_usuarios_aud_ori 
+union 
+--Registros de Insert/ Delete de Origen
+select * from ori.v_usuarios_aud_des 
+order by stamp;
+
+--------------------------------------------------------
+--                F A C T U R A C I O N               --
+--------------------------------------------------------
+
+--VIsta con registros que no se deben sincronizar en Origen
+CREATE or replace VIEW ori.v_facturacion_aud_des_no AS
 --Registros de Insert/ Delete de Destino
 select operation,
     stamp,
@@ -310,36 +336,30 @@ select operation,
     db_instance,
     secuencia,
     id_company,
-    id, 
-    nombre,
-    apellido,
-    created,
-    updated,
+    date,
+    concept,
+    invoice_value,
     synced,
-    updated_function,
-    campo,
-    valor
- from ori.v_usuarios_aud_ori 
-union 
---Registros de Insert/ Delete de Origen
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id, 
-    nombre,
-    apellido,
-    created,
-    updated,
-    synced,
-    updated_function,
-    campo,
-    valor
- from ori.v_usuarios_aud_des 
-order by stamp;
+    updated_function,    
+    null campo,
+    null valor
+ from ori.v_facturacion_log des
+where synced is null 
+  and operation = 'I'
+  --Que existan en el origen
+  and (exists (select 'x'
+                    from ori.facturacion
+                  where id_company = des.id_company
+                    and date = des.date
+                    and concept = des.concept)
+  --que  se hayan borrado en el origen                  
+       or  exists (select 'x'
+                    from ori.usuarios_log
+                  where id_company = des.id_company
+                    and date = des.date
+                    and concept = des.concept
+                    and operation = 'D' and synced is null ));
+
 --VIsta con registros a sincronizar en Origen
 CREATE or replace VIEW ori.v_facturacion_aud_des AS
 --Registros de Insert/ Delete de Destino
@@ -349,41 +369,17 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
- from ori.v_facturacion_log des
+    id_company,
+    date,
+    concept,
+    invoice_value,
+    synced,
+    updated_function,    
+    null campo,
+    null valor
+from ori.v_facturacion_log des
 where synced is null 
-  and operation = 'I'
-  --Que no exista en el origen
-  and not exists (select 'x'
-                    from ori.facturacion
-                  where id_company = des.id_company
-                    and date = des.date
-                    and concept = des.concept)
-  --que no se haya borrado en el origen                  
-  and not exists (select 'x'
-                    from ori.facturacion_log
-                  where id_company = des.id_company
-                    and date = des.date
-                    and concept = des.concept
-                    and operation = 'D' and synced is null )
---Registros de Delete de Destino
-union
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
- from ori.v_facturacion_log des
-where synced is null 
-  and operation = 'D'
-  --que exista en el origen
-  and exists (select 'x'
-                    from ori.facturacion
-                  where id_company = des.id_company
-                    and date = des.date
-                    and concept = des.concept)
+  and operation IN  ('I','D')
 union 
 --Registros de Update de Origen
 select operation,
@@ -392,7 +388,14 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    null concept,
+    null invoice_value,
+    synced,
+    null updated_function,    
+    campo,
+    valor
 from ori.facturacion_log_col 
 where synced is null 
 union 
@@ -403,12 +406,20 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    null concept,
+    null invoice_value,
+    synced,
+    null updated_function,    
+    campo,
+    valor
 from ori.v_facturacion_log_col --_aud_des 
 where synced is null 
 order by stamp;
 
-CREATE or replace VIEW ori.v_facturacion_aud_ori AS
+--VIsta de registros que nos se deben sincronizar en Destino
+CREATE or replace VIEW ori.v_facturacion_aud_ori_no AS
 --Registros de Insert de Origen
 select operation,
     stamp,
@@ -416,41 +427,57 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    concept,
+    invoice_value,
+    synced,
+    updated_function,    
+    null campo,
+    null valor
  from ori.facturacion_log orig
 where synced is null 
   and operation = 'I'
-  --Que no exista en el destino
-  and not exists (select 'x'
+  --Que  existan en el destino
+  and ( exists (select 'x'
                     from ori.v_facturacion
                   where id_company = orig.id_company
                     and date = orig.date
                     and concept = orig.concept)
-  --que no se haya borrado en el destino                  
-  and not exists (select 'x'
+  --que se hayan borrado en el destino                  
+        or  exists (select 'x'
                     from ori.v_facturacion_log
                   where id_company = orig.id_company
                     and date = orig.date
                     and concept = orig.concept
                     and operation = 'D' and synced is null )
---Registros de Delete de Origen
-union
+  --que se hayan borrado en el origen                  
+        or  exists (select 'x'
+                    from ori.facturacion_log
+                  where id_company = orig.id_company
+                    and date = orig.date
+                    and concept = orig.concept
+                    and operation = 'D' and synced is not null ));
+
+CREATE or replace VIEW ori.v_facturacion_aud_ori AS
+--Registros de Insert/ Delete de Origen
 select operation,
     stamp,
     user_aud,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    concept,
+    invoice_value,
+    synced,
+    updated_function,    
+    null campo,
+    null valor
  from ori.facturacion_log orig
 where synced is null 
-  and operation = 'D'
-  --que exista en el destino
-  and exists (select 'x'
-                    from ori.v_facturacion
-                  where id_company = orig.id_company
-                    and date = orig.date
-                    and concept = orig.concept)
+  and operation IN  ('I','D')
 union 
 --Registros de Update de Origen
 select operation,
@@ -459,7 +486,14 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    null concept,
+    null invoice_value,
+    synced,
+    null updated_function,    
+    campo,
+    valor
 from ori.facturacion_log_col 
 where synced is null 
 union 
@@ -470,30 +504,30 @@ select operation,
     sync,
     db_instance,
     secuencia,
-    id_company
+    id_company,
+    date,
+    null concept,
+    null invoice_value,
+    synced,
+    null updated_function,    
+    campo,
+    valor
 from ori.v_facturacion_log_col --_aud_des 
 where synced is null 
 order by stamp;
 
+--VIsta con registros que no se deben sincronizar Origen y Destino
+CREATE or replace VIEW ori.v_facturacion_aud_full_no AS
+--Registros de Insert/ Delete de Destino
+select * from ori.v_facturacion_aud_des_no
+union
+select * from ori.v_facturacion_aud_ori_no;
+
 --VIsta con registros para sincronizar Origen y Destino
 CREATE or replace VIEW ori.v_facturacion_aud_full AS
 --Registros de Insert/ Delete de Destino
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
- from ori.v_facturacion_aud_ori 
+select * from ori.v_facturacion_aud_ori 
 union 
 --Registros de Insert/ Delete de Origen
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company
- from ori.v_facturacion_aud_des 
+select * from ori.v_facturacion_aud_des 
 order by stamp;
