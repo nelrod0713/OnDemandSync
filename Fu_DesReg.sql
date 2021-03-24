@@ -30,20 +30,39 @@ begin
   perform dblink_exec('pg', Lv_sql, false);
 
   --Actualizar registroa que no se deben procesar
-  Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori_no orig ';
-  raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
+  BEGIN
+    Lv_Cursor = 'select orig.*'||
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori_no orig ';
+    raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
 
-  open Lc_Recs for execute Lv_Cursor; 
-  fetch next from Lc_recs into Lr_Recs;
-  while found 
-  loop
-      Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
-                  'where secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor;          
-    fetch next from Lc_Recs into Lr_Recs; 
-  end loop;
-  close Lc_Recs;
+    open Lc_Recs for execute Lv_Cursor; 
+    fetch next from Lc_recs into Lr_Recs;
+    while found 
+    loop
+        Lv_Cursor = 'UPDATE '||Pv_SchemaLoc||'.'||Pv_TableName||'_log  set synced = now() '||
+                    'where secuencia =  '||Lr_Recs.Secuencia;
+        execute Lv_Cursor;          
+      fetch next from Lc_Recs into Lr_Recs; 
+    end loop;
+    close Lc_Recs;
+    Lv_sql := 'commit;';
+    perform dblink_exec('pg', Lv_sql, false);
+    perform dblink_disconnect('pg');
+    exception
+      WHEN OTHERS THEN
+        raise notice E' Error Actualizar registroS que no se deben procesar %s \n',sqlerrm;       
+        Lv_sql := 'rollback;';
+        perform dblink_exec('pg', Lv_sql, false);
+        perform dblink_disconnect('pg');
+        rollback;
+        RETURN;
+  END;    
+
+  --conexion a la BD remota para manejo de rollback
+  perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
+  password=postnrt1964 host='||Pv_Host);
+  Lv_sql := 'begin;';
+  perform dblink_exec('pg', Lv_sql, false);
 
   --Registros de auditoria en la BD Origen, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
@@ -55,7 +74,7 @@ begin
   while found 
   loop
 
-    --raise notice 'Recs %', Lr_Recs; 
+    --raise notice 'Recs op % sec % id % campo % valor %\n', Lr_Recs.operation, Lr_Recs.secuencia, Lr_Recs.id, Lr_Recs.campo, Lr_Recs.valor; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
       /*Lv_Cursor = 'select orig.*'||

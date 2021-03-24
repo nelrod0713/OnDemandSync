@@ -51,7 +51,7 @@ begin
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
 
     if Lr_Cols.ordinal_position = 1 then
@@ -90,7 +90,7 @@ begin
     --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
     --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     --raise notice E'  texto ====> %\n', Lv_Texto;    
       if Lr_Cols.ordinal_position = 1 then
@@ -213,7 +213,7 @@ begin
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     --select   Fu_Comando(Pv_SchemaLoc ,Pv_TableName ,Lr_Cols.column_name, Lr_Users ) into Lv_texto;
 
@@ -289,7 +289,7 @@ Lv_column VARCHAR;
     LOOP
       --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
       Lv_column = Lr_Cols.column_name;
-      select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
+      select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
 
       if Lr_Cols.ordinal_position = 1 then
@@ -378,7 +378,7 @@ begin
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;  ojo
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     --raise notice E' col % valor ====> %\n', Lr_Cols.column_name,Lv_Texto ;    
     if Lv_Texto is null then
@@ -438,8 +438,11 @@ DECLARE
   Lv_Comando varchar;
   BEGIN
 
-    Lv_Comando = 'select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.'||Pv_TableName||' where secuencia = '||Pn_Sec;
-    Lv_Comando = Lv_Comando||' union select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.v_'||Pv_TableName||' where secuencia = '||Pn_Sec;
+    Lv_Comando = 'select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.'||Pv_TableName||' where secuencia = '||Pn_Sec||
+                ' and db_instance ='||chr(39)||Pv_Instance||chr(39);
+    Lv_Comando = Lv_Comando||' union select '||Pv_ColumnName ||' ::text valor from '||Pv_SchemaLoc||'.v_'||Pv_TableName||' where secuencia = '||Pn_Sec||
+                ' and db_instance ='||chr(39)||Pv_Instance||chr(39);
+    --raise notice E'en Get comando %\n',Lv_Comando;
     For Lr_rec in execute Lv_comando 
     LOOP
       return Lr_rec.valor;

@@ -61,7 +61,7 @@ begin
       --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
       --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
       Lv_column = Lr_Cols.column_name;
-      select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+      select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
         into Lv_Texto;       
       --raise notice E'  texto ====> %\n', Lv_Texto;    
         if Lr_Cols.ordinal_position = 1 then
@@ -256,10 +256,10 @@ begin
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
     IF Pc_OperType = 'U' THEN
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     ELSIF Pc_OperType = 'D' THEN
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     END IF;
     if Lv_texto is Null then
@@ -336,7 +336,7 @@ begin
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     if Lv_texto is Null then
       Lv_texto = 'null';
@@ -399,7 +399,7 @@ Lv_column VARCHAR;
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pv_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
       into Lv_Texto;       
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
