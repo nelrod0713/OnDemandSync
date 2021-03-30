@@ -51,22 +51,7 @@ SELECT *
 --VIsta de registros que nos se deben sincronizar en Destino
 CREATE or replace VIEW ori.v_usuarios_aud_ori_no AS
 --Registros de Insert de Origen
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id,
-    nombre,
-    apellido,
-    created,
-    updated,
-    synced,
-    updated_function,
-    null campo,
-    null valor
+select secuencia, db_instance
  from ori.usuarios_log orig
 where synced is null 
   and operation = 'I'
@@ -90,7 +75,7 @@ where synced is null
 
 --VIsta de registros a sincronizar en Destino
 CREATE or replace VIEW ori.v_usuarios_aud_ori AS
---Registros de Insert de Origen
+--Registros de Insert/Delete de Origen
 select operation,
     stamp,
     user_aud,
@@ -109,28 +94,7 @@ select operation,
     null valor
  from ori.usuarios_log orig
 where synced is null 
-  and operation = 'I'
---Registros de Delete de Origen
-union
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id,
-    nombre,
-    apellido,
-    created,
-    updated,
-    synced,
-    updated_function,
-    null campo,
-    null valor
- from ori.usuarios_log orig
-where synced is null 
-  and operation = 'D'
+  and operation in ('I','D')
 union 
 --Registros de Update de Origen
 select operation,
@@ -176,22 +140,7 @@ order by stamp;
 --VIsta con registros que no se deben sincronizar en Origen
 CREATE or replace VIEW ori.v_usuarios_aud_des_no AS
 --Registros de Insert/ Delete de Destino
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id,
-    nombre,
-    apellido,
-    created,
-    updated,
-    synced,
-    updated_function,
-    null campo,
-    null valor
+select secuencia, db_instance
  from ori.v_usuarios_log des
 where synced is null 
   and operation = 'I'
@@ -227,28 +176,7 @@ select operation,
     null valor
  from ori.v_usuarios_log des
 where synced is null 
-  and operation = 'I'
---Registros de Delete de Destino
-union
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    id,
-    nombre,
-    apellido,
-    created,
-    updated,
-    synced,
-    updated_function,
-    null campo,
-    null valor
- from ori.v_usuarios_log des
-where synced is null 
-  and operation = 'D'
+  and operation IN ('I','D') 
 union 
 --Registros de Update de Origen
 select operation,
@@ -314,20 +242,7 @@ order by stamp;
 --VIsta con registros que no se deben sincronizar en Origen
 CREATE or replace VIEW ori.v_facturacion_aud_des_no AS
 --Registros de Insert/ Delete de Destino
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    date,
-    concept,
-    invoice_value,
-    synced,
-    updated_function,    
-    null campo,
-    null valor
+select secuencia, db_instance
  from ori.v_facturacion_log des
 where synced is null 
   and operation = 'I'
@@ -339,11 +254,14 @@ where synced is null
                     and concept = des.concept)
   --que  se hayan borrado en el origen                  
        or  exists (select 'x'
-                    from ori.usuarios_log
+                    from ori.facturacion_log
                   where id_company = des.id_company
                     and date = des.date
                     and concept = des.concept
                     and operation = 'D' and synced is null ));
+
+
+
 
 --VIsta con registros a sincronizar en Origen
 CREATE or replace VIEW ori.v_facturacion_aud_des AS
@@ -406,20 +324,7 @@ order by stamp;
 --VIsta de registros que nos se deben sincronizar en Destino
 CREATE or replace VIEW ori.v_facturacion_aud_ori_no AS
 --Registros de Insert de Origen
-select operation,
-    stamp,
-    user_aud,
-    sync,
-    db_instance,
-    secuencia,
-    id_company,
-    date,
-    concept,
-    invoice_value,
-    synced,
-    updated_function,    
-    null campo,
-    null valor
+select secuencia, db_instance
  from ori.facturacion_log orig
 where synced is null 
   and operation = 'I'

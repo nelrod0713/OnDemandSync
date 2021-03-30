@@ -75,7 +75,7 @@ begin
   --Registros de auditoria de las BDs, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full orig ';
-  --raise notice E' cursor  audit  ====> %\n', lv_cursor;    
+  raise notice E' cursor  audit  ====> %\n', lv_cursor;    
 
   open Lc_Recs for execute Lv_Cursor; 
   fetch next from Lc_recs into Lr_Recs;
