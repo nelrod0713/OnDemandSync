@@ -61,7 +61,7 @@ begin
       --raise notice E'  col ====> %\n', Lr_Cols.column_name;    
       --  EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
       Lv_column = Lr_Cols.column_name;
-      select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
         into Lv_Texto;       
       --raise notice E'  texto ====> %\n', Lv_Texto;    
         if Lr_Cols.ordinal_position = 1 then
@@ -187,6 +187,7 @@ begin
       into Lv_comando; 
 
     EXECUTE Lv_comando ;
+    --raise notice E'paso insert ';
     --Actualizar la fecha de sincronizacion del log Origen
     select   Fu_LocAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log' , Pr_Reg) --Lr_Users )
     into Lv_comando; 
@@ -256,10 +257,10 @@ begin
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
     IF Pc_OperType = 'U' THEN
-    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log_col' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
       into Lv_Texto;       
     ELSIF Pc_OperType = 'D' THEN
-    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
       into Lv_Texto;       
     END IF;
     if Lv_texto is Null then
@@ -336,7 +337,8 @@ begin
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName||'_log' , Lv_column ,  Pr_Reg.secuencia ) 
+--raise notice E' Datos ====> table % col % \n', Pv_TableName, Lv_column;
+    select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
       into Lv_Texto;       
     if Lv_texto is Null then
       Lv_texto = 'null';
@@ -360,11 +362,15 @@ begin
         Lv_comando = Lv_comando||','||Lv_Texto;
       end if;  
     end if;  
-
   END LOOP;
+--raise notice E' comand ====>  %  \n', Lv_comando;
       Lv_comando = Lv_comando||' ) '||chr(39)||')';
 
   RETURN Lv_comando ;
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_TableInsComand %s \n',sqlerrm;       
+    rollback;
 end;
 $$ LANGUAGE plpgsql VOLATILE;
 
@@ -399,7 +405,7 @@ Lv_column VARCHAR;
   LOOP
     --EXECUTE 'SELECT ($1).' || Lr_Cols.column_name || '::text' INTO Lv_Texto USING Pr_Reg;
     Lv_column = Lr_Cols.column_name;
-    select Fu_GetValColumn(Pr_Reg.Db_Instance ,  Pv_Host ,  Pv_SchemaLoc ,  Pv_SchemaRem ,  Pv_TableName , Lv_column ,  Pr_Reg.secuencia ) 
+    select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
       into Lv_Texto;       
     if Lr_Cols.ordinal_position = 1 then
       if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
@@ -416,7 +422,6 @@ Lv_column VARCHAR;
     end if;  
   END LOOP;
 
-  --raise notice E' comando update aud ====> %\n', lv_comando;    
   RETURN Lv_comando ;
 end;
 $$ LANGUAGE plpgsql VOLATILE;

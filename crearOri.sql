@@ -16,6 +16,7 @@ CREATE EXTENSION dblink;
 \i Cseqs.sql
 --Crear las tablas
 \i ctablas.sql
+\i Ctypes.sql
 
 --VIsta para ver la informacion de las compañias
 \i cvistaOri.sql

@@ -8,7 +8,7 @@ DECLARE
   --Pv_Schema VARCHAR = 'ori';
   --Pv_TableName VARCHAR= 'facturacion';
   Pv_TableName VARCHAR= 'usuarios';
-  Pv_Operation VARCHAR='D';
+  Pv_Operation VARCHAR='F';
   Pr_Reg ori.v_facturacion_log%ROWTYPE;
   v_sql varchar;
   v_int int;

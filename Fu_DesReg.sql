@@ -74,7 +74,7 @@ begin
   while found 
   loop
 
-    --raise notice 'Recs op % sec % id % campo % valor %\n', Lr_Recs.operation, Lr_Recs.secuencia, Lr_Recs.id, Lr_Recs.campo, Lr_Recs.valor; 
+    raise notice 'Recs op % sec % id % campo % valor %\n', Lr_Recs.operation, Lr_Recs.secuencia, Lr_Recs.id, Lr_Recs.campo, Lr_Recs.valor; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
       /*Lv_Cursor = 'select orig.*'||
