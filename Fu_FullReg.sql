@@ -11,8 +11,8 @@ AS $BODY$
 declare 
 Lv_cursor varchar;
 Lc_Recs refcursor;
-Lr_Recs RECORD; --record;  ojo
-Lr_Audit RECORD; --ori.usuarios_log%ROWTYPE; --record;  ojo
+Lr_Recs RECORD; --record;  
+Lr_Audit RECORD; 
 Lr_Cols RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
@@ -65,7 +65,6 @@ begin
         rollback;
         RETURN;
   END;    
---return;
   --conexion a la BD remota para manejo de rollback
   perform dblink_connect('pg', 'dbname='||Pv_Instance||' user=postgres
   password=postnrt1964 host='||Pv_Host);

@@ -120,48 +120,6 @@ exception
     rollback;
 
 end $BODY$;
-CREATE OR REPLACE FUNCTION Fu_Comando(Pv_SchemaLoc character varying , Pv_TableName character varying , Pv_ColumnName character varying , Pr_Record RECORD) RETURNS VARCHAR AS $$
-DECLARE
-  Ln_cantLog integer;
-  Lv_Texto  VARCHAR;
-  lv_comando VARCHAR;
-  ri RECORD;
-
-BEGIN
-     Lv_comando = 'select '||Pv_SchemaLoc||'.'||Pv_TableName||'.'||Pv_ColumnName||' into Lv_texto ';
-    FOR ri IN
-        SELECT k.ordinal_position, k.column_name, c.data_type
-        FROM information_schema.key_column_usage k,
-            information_schema.columns c
-        WHERE	k.constraint_catalog = c.table_catalog
-          and k.constraint_schema = c.table_schema
-          and k.table_name = c.table_name
-          and k.column_name = c.column_name
-          and k.constraint_schema = Pv_SchemaLoc
-          AND k.table_name = Pv_TableName
-        ORDER BY ordinal_position
-    LOOP
-      EXECUTE 'SELECT ($1).' || ri.column_name || '::text' INTO Lv_Texto USING Pr_Record;
-      if ri.ordinal_position = 1 then
-        if ri.data_type in ('character varying','date') Then
-          Lv_comando = Lv_comando||' where '||ri.column_name ||'='||chr(39)||Lv_Texto||chr(39);
-        else
-          Lv_comando = Lv_comando||' where '||ri.column_name ||'='||Lv_Texto;
-        end if;
-      else
-        if ri.data_type in ('character varying','date') Then
-          Lv_comando = Lv_comando||' and  '||ri.column_name ||'='||chr(39)||Lv_Texto||chr(39);
-        else
-          Lv_comando = Lv_comando||' and  '||ri.column_name ||'='||Lv_Texto;
-        end if;
-      end if;  
-    END LOOP;
-
-      --raise notice E' COMANDO  ====> %\n', lv_comando;
-      execute lv_comando;    
-    return Lv_texto;
-END;
-$$ LANGUAGE plpgsql VOLATILE;
 
 --Procedimiento para sincromizar BD Origen con los registros eliminados de la BD Destino
 create or replace procedure Fu_OriSyncDel(
@@ -244,7 +202,6 @@ exception
     raise notice E' Error Fu_OriSyncDel %s \n',sqlerrm;       
     rollback;
 END $BODY$;
---end $BODY$;
 --Funcion para Actualizar la fecha de sincronizacion del log
 create or replace FUNCTION Fu_RemAudUpdComand(
   Pv_Instance varchar,
@@ -261,15 +218,12 @@ Lc_RegAud refcursor;
 Lr_users ori.usuarios_log%ROWTYPE; --record;
 Lr_Cols RECORD;
 Lr_userDes ori.usuarios_log_col%ROWTYPE;
---Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 Lv_column VARCHAR;
---Lv_Texto TEXT;
---Lr_Tabla RECORD;
---Lv_SchemaLocal VARCHAR = 'ori';
+
  begin 
   --Actualizar la fecha de sincronizacion del log 
   Lv_comando = 'select dblink_exec(''dbname='||Pv_Instance||
@@ -426,11 +380,16 @@ end $BODY$;
 create or replace FUNCTION Fu_GetValColumn(Pv_TableName VARCHAR,Pv_col VARCHAR, Pr_Reg RECORD) RETURNS VARCHAR AS $$
 DECLARE
   Lv_Texto  VARCHAR;
-  Lr_usuarios ori.Reg_usuarios_aud = Pr_Reg;
+  Lr_usuarios ori.Reg_usuarios_aud ;
+  Lr_Facturacion ori.Reg_facturacion_aud;
   BEGIN
 
   If strpos(Pv_TableName, 'usuarios')  > 0 THEN
+    Lr_usuarios = Pr_Reg;
     EXECUTE 'SELECT $1.'||Pv_col|| '::text' INTO Lv_Texto USING Lr_usuarios;
+  ElsIf strpos(Pv_TableName, 'facturacion')  > 0 THEN
+    Lr_Facturacion  = Pr_Reg;
+    EXECUTE 'SELECT $1.'||Pv_col|| '::text' INTO Lv_Texto USING Lr_Facturacion;
   END if;
   return Lv_Texto;
 

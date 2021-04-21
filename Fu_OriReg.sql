@@ -75,10 +75,6 @@ begin
     --raise notice 'Recs %', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_OriSyncNew(
         Pv_Instance,
         Pv_Host,
@@ -93,10 +89,6 @@ begin
 
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_OriSyncDel(
         Pv_Instance,
         Pv_Host,

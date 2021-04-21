@@ -77,10 +77,6 @@ begin
     raise notice 'Recs op % sec % id % campo % valor %\n', Lr_Recs.operation, Lr_Recs.secuencia, Lr_Recs.id, Lr_Recs.campo, Lr_Recs.valor; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit; */         
       call Fu_DesSyncNew(
         Pv_Instance,
         Pv_Host,
@@ -94,10 +90,6 @@ begin
       execute Lv_Cursor;          
     --Si es un DELETE
     ELSIF Lr_Recs.operation = 'D' THEN
-      /*Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      execute Lv_Cursor into Lr_Audit; */         
       call Fu_DesSyncDel(
         Pv_Instance,
         Pv_Host,
@@ -111,16 +103,6 @@ begin
       execute Lv_Cursor;          
     --Si es un UPDATE
     ELSIF Lr_Recs.operation = 'U' THEN
-      /*IF Lr_Recs.db_instance = 'bd_ori' THEN
-        Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log_col orig '||
-                    'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      ELSE
-        Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col orig '||
-                    'where orig.secuencia =  '||Lr_Recs.Secuencia;
-      END IF;
-      execute Lv_Cursor into Lr_Audit;*/          
       call Fu_DesSyncUpd(
         Pv_Instance,
         Pv_Host,
@@ -146,39 +128,3 @@ exception
     rollback;
   
 END $BODY$;
-
-create or replace function  Fu_Getrecord(
-  Pv_SchemaLoc VARCHAR,
-  Pv_TableName character varying,
-  Pn_Secuencia BIGINT
-) 
-returns RECORD AS $$
---language plpgsql    
---AS $BODY$
-DECLARE
-Lv_Cursor VARCHAR;
-Lr_Users ori.usuarios_log%ROWTYPE;
-Lr_fact ori.facturacion_log%ROWTYPE;
-Lr_Record RECORD;
-BEGIN
-      Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Pn_Secuencia;
-      Lv_Cursor = Lv_Cursor||' union select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log orig '||
-                  'where orig.secuencia =  '||Pn_Secuencia;
-        raise notice E' comando  ====> %\n', Lv_cursor;
-      IF Pv_TableName = 'usuarios' THEN            
-        EXECUTE Lv_Cursor into Lr_Users;
-        raise notice E' get record   ====> %\n', Lr_Users.secuencia;
-        Lr_Record = Lr_users;    
-        RETURN Lr_Users ;
-      ELSIF Pv_TableName = 'facturacion' THEN            
-        EXECUTE Lv_Cursor into Lr_Fact;
-        Lr_Record = Lr_fact;    
-        RETURN Lr_Fact ;
-      END IF;    
-        raise notice E' get record fin  ====> %\n', Lr_Record.secuencia;
-        --RETURN Lr_Record;    
-END; --$BODY$;
-$$ LANGUAGE plpgsql VOLATILE;

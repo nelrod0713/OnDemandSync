@@ -13,20 +13,12 @@ declare
 Lv_cursor varchar;
 Lc_Users refcursor;
 Lc_RegAud refcursor;
---Lr_users ori.facturacion%ROWTYPE; --record;
-Lr_users ori.usuarios%ROWTYPE; --record; ojo
 Lr_Cols RECORD;
---Lr_userDes ori.facturacion_log_col%ROWTYPE;
-Lr_userDes record; --ori.usuarios_log_col%ROWTYPE; --ojo
---Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 Lv_column VARCHAR;
---Lr_Tabla RECORD;
---Lv_text TEXT;
---Lv_SchemaLocal VARCHAR = 'ori';
 begin 
   select db_instance
     into Lv_instance
@@ -63,7 +55,6 @@ begin
       Lv_column = Lr_Cols.column_name;
     select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
         into Lv_Texto;       
-      --raise notice E'  texto ====> %\n', Lv_Texto;    
         if Lr_Cols.ordinal_position = 1 then
           if Lr_Cols.data_type in ('character varying','date','timestamp without time zone', 'character') Then
             Lv_comando = Lv_comando||' where '||Lr_Cols.column_name ||'='||chr(39)||Lv_Texto||chr(39);
@@ -77,12 +68,17 @@ begin
             Lv_comando = Lv_comando||' and  '||Lr_Cols.column_name ||'='||Lv_Texto;
           end if;
         end if;  
+      --raise notice E'  Lv_comando ====> %\n', Lv_comando;    
       END LOOP;
+      --raise notice E'  comando ====> %\n', Lv_comando;    
 
     EXECUTE Lv_comando ;
 
   END IF;
-
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_DesSyncUpd %s \n',sqlerrm;       
+    rollback;
 end $BODY$;
 
 --Procedimiento para sincromizar BD Destino con los registros eliminados de la BD Origen
@@ -98,22 +94,11 @@ language plpgsql
 AS $BODY$
 declare 
 Lv_cursor varchar;
---Lc_Users refcursor;
---Lc_RegAud refcursor;
---Lr_users record; --ori.usuarios_log%ROWTYPE; --record;  ojo
---Lr_users ori.facturacion_log%ROWTYPE; --record;
 Lr_Cols RECORD;
---Lr_userDes ori.usuarios_log_col%ROWTYPE;
---Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
---Lr_Tabla RECORD;
---Lv_text TEXT;
---Lv_SchemaLocal VARCHAR = 'ori';
---Lr_usuarios ori.usuarios_log%ROWTYPE;  --ojo
---Lr_fact ori.facturacion_log%ROWTYPE;  --ojo
 begin 
   --Registros elimiandos de la BD Origen
     Pr_Reg.updated_function= 'F_OriSync';
@@ -139,6 +124,10 @@ begin
     into Lv_comando; 
     --raise notice E' comando update ====> %\n', lv_comando;    
     EXECUTE Lv_comando ;
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_DesSyncDel %s \n',sqlerrm;       
+    rollback;
 
 END $BODY$;   
 
@@ -155,21 +144,12 @@ language plpgsql
 AS $BODY$
 declare 
 Lv_cursor varchar;
---Lc_Users refcursor;
---Lc_RegAud refcursor;
---Lr_users ori.facturacion_log%ROWTYPE; --record;
---Lr_users RECORD; --ori.usuarios_log%ROWTYPE; --record;
 Lr_Cols RECORD;
---Lr_userDes ori.usuarios_log_col%ROWTYPE;
---Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_instance VARCHAR;
 Lv_CurrentDB VARCHAR;
 Ln_Cant integer;
---Lr_Tabla RECORD;
---Lv_text TEXT;
---Lv_SchemaLocal VARCHAR = 'ori';
 begin 
     Pr_reg.updated_function= 'F_OriSync';
     Pr_reg.synced= now();
@@ -187,12 +167,16 @@ begin
       into Lv_comando; 
 
     EXECUTE Lv_comando ;
-    --raise notice E'paso insert ';
     --Actualizar la fecha de sincronizacion del log Origen
     select   Fu_LocAudUpdComand(Pv_Instance , Pv_Host , Pv_SchemaLoc , Pv_SchemaRem , Pv_TableName||'_log' , Pr_Reg) --Lr_Users )
     into Lv_comando; 
     EXECUTE Lv_comando ;
+    --raise notice E'paso comando loc upd % ',Lv_comando;
 
+exception
+  WHEN OTHERS THEN
+    raise notice E' Error Fu_DesSyncNew %s \n',sqlerrm;       
+    rollback;
 end $BODY$;
 
 
@@ -208,21 +192,10 @@ create or replace FUNCTION Fu_TableUpdComand(
   Pc_OperType character(1) --U Update D Delete
 ) RETURNS VARCHAR AS $$
 DECLARE
---Lv_cursor varchar;
---Lc_Users refcursor;
---Lc_RegAud refcursor;
---Lr_users ori.usuarios_log%ROWTYPE; --record;
 Lr_Cols RECORD;
---Lr_userDes ori.usuarios_log_col%ROWTYPE;
---Lr_userDes RECORD;
 Lv_comando VARCHAR;
 Lv_Texto  VARCHAR;
 Lv_column VARCHAR;
---Lv_instance VARCHAR;
---Lv_CurrentDB VARCHAR;
---Lv_Texto TEXT;
---Lr_Tabla RECORD;
---Lv_SchemaLocal VARCHAR = 'ori';
 begin 
   DISCARD PLANS;
 
@@ -340,6 +313,7 @@ begin
 --raise notice E' Datos ====> table % col % \n', Pv_TableName, Lv_column;
     select Fu_GetValColumn(Pv_TableName, Lv_column, Pr_Reg) 
       into Lv_Texto;       
+--raise notice E' Text ====>  %  \n', Lv_Texto;
     if Lv_texto is Null then
       Lv_texto = 'null';
       Lr_Cols.data_type = 'int';
@@ -363,8 +337,8 @@ begin
       end if;  
     end if;  
   END LOOP;
---raise notice E' comand ====>  %  \n', Lv_comando;
       Lv_comando = Lv_comando||' ) '||chr(39)||')';
+--raise notice E' comand ====>  %  \n', Lv_comando;
 
   RETURN Lv_comando ;
 exception
