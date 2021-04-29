@@ -1,5 +1,6 @@
 --Procedimiento para sincromizar BD Destino con los registros eliminados de la BD Origen
 create or replace PROCEDURE Fu_DesReg(
+  Id_company INTEGER,
   Pv_Instance varchar,
   Pv_Host VARCHAR,
   Pv_SchemaLoc VARCHAR,
@@ -32,7 +33,7 @@ begin
   --Actualizar registroa que no se deben procesar
   BEGIN
     Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori_no orig ';
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori_no'||id_company||' orig';
     raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
 
     open Lc_Recs for execute Lv_Cursor; 
@@ -66,7 +67,7 @@ begin
 
   --Registros de auditoria en la BD Origen, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori orig ';
+                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_ori'||Id_company||' orig where id_company ='||id_company;
   raise notice E' cursor  audit  ====> %\n', lv_cursor;    
 
   open Lc_Recs for execute Lv_Cursor; 
@@ -74,7 +75,7 @@ begin
   while found 
   loop
 
-    raise notice 'Recs op % sec % id % campo % valor %\n', Lr_Recs.operation, Lr_Recs.secuencia, Lr_Recs.id, Lr_Recs.campo, Lr_Recs.valor; 
+    raise notice 'Recs  % \n', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
       call Fu_DesSyncNew(

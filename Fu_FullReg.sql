@@ -1,5 +1,6 @@
 --Procedimiento para sincromizar BDs Destino y Origen con los registros Modificados en  ambas BDs
 create or replace PROCEDURE Fu_FullReg(
+  Id_company INTEGER,
   Pv_Instance varchar,
   Pv_Host VARCHAR,
   Pv_SchemaLoc VARCHAR,
@@ -32,7 +33,7 @@ begin
     --Actualizar registroa que no se deben procesar
   BEGIN
     Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full_no orig ';
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full_no'||id_company||' orig ';
     raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
 
     open Lc_Recs for execute Lv_Cursor; 
@@ -73,7 +74,7 @@ begin
 
   --Registros de auditoria de las BDs, pendientes de aplicar
   Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full orig ';
+                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_full'||Id_company||' orig ';
   raise notice E' cursor  audit  ====> %\n', lv_cursor;    
 
   open Lc_Recs for execute Lv_Cursor; 

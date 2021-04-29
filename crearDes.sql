@@ -1,6 +1,6 @@
 --Script general para crear la BD de un cliente y todos los objetos necesarios para la sincronizacion ON DEMAND 
 --Para correr el script "crear.sql" desde la terminal
---psql -U postgres -v BD="bd_ori" -v sch="ori" < crearDes.sql
+--psql -U postgres -v BD="bd_des" -v sch="des" < crearDes.sql
 --Crear la BD para la Compañia
 \i crearBD.sql
 --cambiar a la BD nueva

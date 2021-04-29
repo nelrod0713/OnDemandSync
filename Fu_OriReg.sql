@@ -1,5 +1,6 @@
 --Procedimiento para sincromizar BD Origen con los registros Modificados en la BD Origen
 create or replace PROCEDURE Fu_OriReg(
+  Id_company INTEGER,
   Pv_Instance varchar,
   Pv_Host VARCHAR,
   Pv_SchemaLoc VARCHAR,
@@ -29,7 +30,7 @@ begin
   --Actualizar registroa que no se deben procesar
   BEGIN
     Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des_no orig ';
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des_no'||id_company||' orig ';
     raise notice E' cursor  no audit  ====> %\n', lv_cursor;    
 
     open Lc_Recs for execute Lv_Cursor; 
@@ -65,7 +66,7 @@ begin
 
   --Registros de auditoria en la BD Destino, pendientes de aplicar En Origen
   Lv_Cursor = 'select orig.*'||
-                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des orig ';
+                 ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_aud_des'||Id_company||' orig where id_company ='||id_company;
   raise notice E' cursor  audit  ====> %\n', lv_cursor;    
 
   open Lc_Recs for execute Lv_Cursor; 
@@ -108,9 +109,10 @@ begin
                     'where orig.secuencia =  '||Lr_Recs.Secuencia;
       ELSE
         Lv_Cursor = 'select orig.*'||
-                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col orig '||
+                  ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col'||id_company||' orig '||
                     'where orig.secuencia =  '||Lr_Recs.Secuencia;
       END IF;
+    raise notice E' Lv_Cursor  ====> %\n', Lv_Cursor;    
       execute Lv_Cursor into Lr_Audit;          
       call Fu_OriSyncUpd(
         Pv_Instance,
