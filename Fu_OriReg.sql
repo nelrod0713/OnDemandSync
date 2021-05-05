@@ -112,7 +112,7 @@ begin
                   ' from '||Pv_SchemaLoc||'.v_'||Pv_TableName||'_log_col'||id_company||' orig '||
                     'where orig.secuencia =  '||Lr_Recs.Secuencia;
       END IF;
-    raise notice E' Lv_Cursor  ====> %\n', Lv_Cursor;    
+    --raise notice E' Lv_Cursor  ====> %\n', Lv_Cursor;    
       execute Lv_Cursor into Lr_Audit;          
       call Fu_OriSyncUpd(
         Pv_Instance,

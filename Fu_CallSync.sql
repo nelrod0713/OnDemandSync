@@ -78,6 +78,7 @@ begin
       Raise notice E'Paso Sync full \n';
     END IF;
     call F_ProcsLog(
+      Pn_IdCompany,
       Lv_SchemaLoc ,
       Pv_TableName,
       Pv_Operation 

@@ -75,7 +75,7 @@ begin
   while found 
   loop
 
-    raise notice 'Recs  % \n', Lr_Recs; 
+    --raise notice 'Recs  % \n', Lr_Recs; 
     --Si es un INSERT
     IF Lr_Recs.operation = 'I' THEN
       call Fu_DesSyncNew(
